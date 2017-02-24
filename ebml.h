@@ -108,6 +108,8 @@
 
 /* Other defines */
 #define EBML_MAX_ID_LENGTH 4
+#define EBML_TRACK_TYPE_CODE_SUBTITLE 0x11
+#define EBML_MAX_TRACK_NUMBER 128
 
 /* Messages */
 #define EBML_INFO "Matroska parser info: "

@@ -3,6 +3,8 @@
 #include <memory.h>
 #include "ebml.h"
 
+int is_track_subtitle[EBML_MAX_TRACK_NUMBER];
+
 void skip_bytes(FILE* file, EBML_int n) {
     fseek(file, n, SEEK_CUR);
 }
@@ -199,11 +201,12 @@ void parse_segment_info(FILE* file) {
     }
 }
 
-void parse_segment_cluster_block_group_block(FILE* file) {
+void parse_segment_cluster_block_group_block(FILE* file, EBML_int cluster_timecode) {
     EBML_int len = read_vint_length(file);
     EBML_int pos = get_current_byte(file);
     EBML_int track_number = read_vint_length(file);     // track number is length, not int
-    if (track_number < 4) {
+
+    if (!is_track_subtitle[track_number]) {
         set_bytes(file, pos + len);
         return;
     }
@@ -213,13 +216,16 @@ void parse_segment_cluster_block_group_block(FILE* file) {
 
     read_byte(file);    // skip one byte
 
-    read_bytes(file, pos + len - get_current_byte(file));
-    //printf("%s\n\n", read_bytes(file, pos + len - get_current_byte(file)));
+    printf("Pos: %ld\n", get_current_byte(file));
+    printf("Time code: %ld\n", timecode + cluster_timecode);
+    printf("%s\n\n", read_bytes(file, pos + len - get_current_byte(file)));
 }
 
-void parse_segment_cluster_block_group(FILE* file) {
+void parse_segment_cluster_block_group(FILE* file, EBML_int cluster_timecode) {
     EBML_int len = read_vint_length(file);
     EBML_int pos = get_current_byte(file);
+
+    EBML_int block_duration = 0;
 
     int code = 0, code_len = 0;
     while (pos + len > get_current_byte(file)) {
@@ -230,7 +236,7 @@ void parse_segment_cluster_block_group(FILE* file) {
         switch (code) {
             /* Segment cluster block group ids */
             case EBML_SEGMENT_CLUSTER_BLOCK_GROUP_BLOCK:
-                parse_segment_cluster_block_group_block(file);
+                parse_segment_cluster_block_group_block(file, cluster_timecode);
                 EBML_SWITCH_BREAK(code, code_len);
             case EBML_SEGMENT_CLUSTER_BLOCK_GROUP_BLOCK_VIRTUAL:
                 read_vint_block_skip(file);
@@ -239,7 +245,7 @@ void parse_segment_cluster_block_group(FILE* file) {
                 read_vint_block_skip(file);
                 EBML_SWITCH_BREAK(code, code_len);
             case EBML_SEGMENT_CLUSTER_BLOCK_GROUP_BLOCK_DURATION:
-                read_vint_block_skip(file);
+                block_duration = read_vint_block_int(file);
                 EBML_SWITCH_BREAK(code, code_len);
             case EBML_SEGMENT_CLUSTER_BLOCK_GROUP_REFERENCE_PRIORITY:
                 read_vint_block_skip(file);
@@ -283,6 +289,8 @@ void parse_segment_cluster(FILE* file) {
     EBML_int len = read_vint_length(file);
     EBML_int pos = get_current_byte(file);
 
+    EBML_int timecode = 0;
+
     int code = 0, code_len = 0;
     while (pos + len > get_current_byte(file)) {
         code <<= 8;
@@ -292,7 +300,7 @@ void parse_segment_cluster(FILE* file) {
         switch (code) {
             /* Segment cluster ids */
             case EBML_SEGMENT_CLUSTER_TIMECODE:
-                read_vint_block_skip(file);
+                timecode = read_vint_block_int(file);
                 EBML_SWITCH_BREAK(code, code_len);
             case EBML_SEGMENT_CLUSTER_SILENT_TRACKS:
                 read_vint_block_skip(file);
@@ -307,7 +315,7 @@ void parse_segment_cluster(FILE* file) {
                 read_vint_block_skip(file);
                 EBML_SWITCH_BREAK(code, code_len);
             case EBML_SEGMENT_CLUSTER_BLOCK_GROUP:
-                parse_segment_cluster_block_group(file);
+                parse_segment_cluster_block_group(file, timecode);
                 EBML_SWITCH_BREAK(code, code_len);
             case EBML_SEGMENT_CLUSTER_ENCRYPTED_BLOCK:
                 read_vint_block_skip(file);
@@ -359,6 +367,10 @@ void parse_segment_track_entry(FILE* file) {
     EBML_int len = read_vint_length(file);
     EBML_int pos = get_current_byte(file);
 
+    EBML_int track_number = 0;
+    EBML_int track_type = 0;
+    EBML_byte* lang = "";
+
     int code = 0, code_len = 0;
     while (pos + len > get_current_byte(file)) {
         code <<= 8;
@@ -368,13 +380,14 @@ void parse_segment_track_entry(FILE* file) {
         switch (code) {
             /* Track entry ids*/
             case EBML_SEGMENT_TRACK_TRACK_NUMBER:
-                printf("Number: %ld\n", read_vint_block_int(file));
+                track_number = read_vint_block_int(file);
                 EBML_SWITCH_BREAK(code, code_len);
             case EBML_SEGMENT_TRACK_TRACK_UID:
                 printf("UID: %lu\n", read_vint_block_int(file));
                 EBML_SWITCH_BREAK(code, code_len);
             case EBML_SEGMENT_TRACK_TRACK_TYPE:
-                printf("Type: %s\n", get_track_entry_type_description(read_vint_block_int(file)));
+                track_type = read_vint_block_int(file);
+                printf("Type: %s\n", get_track_entry_type_description(track_type));
                 EBML_SWITCH_BREAK(code, code_len);
             case EBML_SEGMENT_TRACK_FLAG_ENABLED:
                 read_vint_block_skip(file);
@@ -407,7 +420,8 @@ void parse_segment_track_entry(FILE* file) {
                 printf("Name: %s\n", read_vint_block_string(file));
                 EBML_SWITCH_BREAK(code, code_len);
             case EBML_SEGMENT_TRACK_LANGUAGE:
-                printf("Language: %s\n", read_vint_block_string(file));
+                lang = read_vint_block_string(file);
+                printf("Language: %s\n", lang);
                 EBML_SWITCH_BREAK(code, code_len);
             case EBML_SEGMENT_TRACK_CODEC_ID:
                 printf("Codec ID: %s\n", read_vint_block_string(file));
@@ -496,11 +510,17 @@ void parse_segment_track_entry(FILE* file) {
                 break;
         }
     }
+
+    if (track_type == EBML_TRACK_TYPE_CODE_SUBTITLE) {
+        is_track_subtitle[track_number] = 1;
+    }
 }
 
 void parse_segment_tracks(FILE* file) {
     EBML_int len = read_vint_length(file);
     EBML_int pos = get_current_byte(file);
+
+    memset(is_track_subtitle, 0, sizeof(is_track_subtitle));
 
     int code = 0, code_len = 0;
     while (pos + len > get_current_byte(file)) {
@@ -514,7 +534,7 @@ void parse_segment_tracks(FILE* file) {
                 parse_segment_track_entry(file);
                 EBML_SWITCH_BREAK(code, code_len);
 
-                /* Misc ids */
+            /* Misc ids */
             case EBML_VOID:
                 read_vint_block_skip(file);
                 EBML_SWITCH_BREAK(code, code_len);
@@ -626,6 +646,7 @@ void parse(FILE* file) {
                 break;
         }
     }
+    fclose(file);
 }
 
 int main(int argc, char** argv) {
