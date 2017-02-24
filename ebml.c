@@ -3,32 +3,32 @@
 #include <memory.h>
 #include "ebml.h"
 
-void skip_bytes(FILE* file, unsigned long n) {
+void skip_bytes(FILE* file, EBML_int n) {
     fseek(file, n, SEEK_CUR);
 }
 
-void set_bytes(FILE* file, unsigned long n) {
+void set_bytes(FILE* file, EBML_int n) {
     fseek(file, n, SEEK_SET);
 }
 
-unsigned long get_current_byte(FILE* file) {
-    return (unsigned long) ftell(file);
+EBML_int get_current_byte(FILE* file) {
+    return (EBML_int) ftell(file);
 }
 
-unsigned char* read_bytes(FILE* file, unsigned  long n) {
-    unsigned char* buffer = malloc(sizeof(unsigned char) * n);
+EBML_byte* read_bytes(FILE* file, EBML_int n) {
+    EBML_byte* buffer = malloc(sizeof(EBML_byte) * n);
     fread(buffer, 1, n, file);
     return buffer;
 }
 
-unsigned char read_byte(FILE* file) {
-    unsigned char ch;
+EBML_byte read_byte(FILE* file) {
+    EBML_byte ch;
     fread(&ch, 1, 1, file);
     return ch;
 }
 
-unsigned long read_vint_length(FILE* file) {
-    unsigned char ch = read_byte(file);
+EBML_int read_vint_length(FILE* file) {
+    EBML_byte ch = read_byte(file);
     int cnt = 1;
     for (int i = 7; i >= 0; i--) {
         if ((ch & (1 << i)) != 0) {
@@ -37,7 +37,7 @@ unsigned long read_vint_length(FILE* file) {
         } else
             cnt++;
     }
-    unsigned long ret = ch;
+    EBML_int ret = ch;
     for (int i = 1; i < cnt; i++) {
         ret <<= 8;
         ret += read_byte(file);
@@ -45,16 +45,16 @@ unsigned long read_vint_length(FILE* file) {
     return ret;
 }
 
-unsigned char* read_vint_block(FILE* file) {
-    unsigned long len = read_vint_length(file);
+EBML_byte* read_vint_block(FILE* file) {
+    EBML_int len = read_vint_length(file);
     return read_bytes(file, len);
 }
 
-unsigned long read_vint_block_int(FILE* file) {
-    unsigned long len = read_vint_length(file);
-    unsigned char* s = read_bytes(file, len);
+EBML_int read_vint_block_int(FILE* file) {
+    EBML_int len = read_vint_length(file);
+    EBML_byte* s = read_bytes(file, len);
 
-    unsigned long res = 0;
+    EBML_int res = 0;
     for (int i = 0; i < len; i++) {
         res <<= 8;
         res += s[i];
@@ -63,18 +63,18 @@ unsigned long read_vint_block_int(FILE* file) {
     return res;
 }
 
-unsigned char* read_vint_block_string(FILE* file) {
+EBML_byte* read_vint_block_string(FILE* file) {
     return read_vint_block(file);
 }
 
 void read_vint_block_skip(FILE* file) {
-    long len = read_vint_length(file);
+    EBML_int len = read_vint_length(file);
     skip_bytes(file, len);
 }
 
 void parse_ebml(FILE* file) {
-    long len = read_vint_length(file);
-    long pos = get_current_byte(file);
+    EBML_int len = read_vint_length(file);
+    EBML_int pos = get_current_byte(file);
 
     int code = 0, code_len = 0;
     while (pos + len > get_current_byte(file)) {
@@ -126,8 +126,8 @@ void parse_ebml(FILE* file) {
 }
 
 void parse_segment_info(FILE* file) {
-    long len = read_vint_length(file);
-    long pos = get_current_byte(file);
+    EBML_int len = read_vint_length(file);
+    EBML_int pos = get_current_byte(file);
 
     int code = 0, code_len = 0;
     while (pos + len > get_current_byte(file)) {
@@ -200,15 +200,15 @@ void parse_segment_info(FILE* file) {
 }
 
 void parse_segment_cluster_block_group_block(FILE* file) {
-    long len = read_vint_length(file);
-    long pos = get_current_byte(file);
-    long track_number = read_vint_length(file);     // track number is length, not int
+    EBML_int len = read_vint_length(file);
+    EBML_int pos = get_current_byte(file);
+    EBML_int track_number = read_vint_length(file);     // track number is length, not int
     if (track_number < 4) {
         set_bytes(file, pos + len);
         return;
     }
 
-    long timecode = read_byte(file);
+    EBML_int timecode = read_byte(file);
     timecode <<= 8; timecode += read_byte(file);
 
     read_byte(file);    // skip one byte
@@ -218,8 +218,8 @@ void parse_segment_cluster_block_group_block(FILE* file) {
 }
 
 void parse_segment_cluster_block_group(FILE* file) {
-    long len = read_vint_length(file);
-    long pos = get_current_byte(file);
+    EBML_int len = read_vint_length(file);
+    EBML_int pos = get_current_byte(file);
 
     int code = 0, code_len = 0;
     while (pos + len > get_current_byte(file)) {
@@ -280,8 +280,8 @@ void parse_segment_cluster_block_group(FILE* file) {
 }
 
 void parse_segment_cluster(FILE* file) {
-    long len = read_vint_length(file);
-    long pos = get_current_byte(file);
+    EBML_int len = read_vint_length(file);
+    EBML_int pos = get_current_byte(file);
 
     int code = 0, code_len = 0;
     while (pos + len > get_current_byte(file)) {
@@ -332,7 +332,7 @@ void parse_segment_cluster(FILE* file) {
     }
 }
 
-char* get_track_entry_type_description(unsigned long type) {
+char* get_track_entry_type_description(EBML_int type) {
     switch (type) {
         case 1:
             return "video";
@@ -356,8 +356,8 @@ char* get_track_entry_type_description(unsigned long type) {
 void parse_segment_track_entry(FILE* file) {
     printf("\n==== Track entry ====\n");
 
-    long len = read_vint_length(file);
-    long pos = get_current_byte(file);
+    EBML_int len = read_vint_length(file);
+    EBML_int pos = get_current_byte(file);
 
     int code = 0, code_len = 0;
     while (pos + len > get_current_byte(file)) {
@@ -499,8 +499,8 @@ void parse_segment_track_entry(FILE* file) {
 }
 
 void parse_segment_tracks(FILE* file) {
-    long len = read_vint_length(file);
-    long pos = get_current_byte(file);
+    EBML_int len = read_vint_length(file);
+    EBML_int pos = get_current_byte(file);
 
     int code = 0, code_len = 0;
     while (pos + len > get_current_byte(file)) {
@@ -534,8 +534,8 @@ void parse_segment_tracks(FILE* file) {
 }
 
 void parse_segment(FILE* file) {
-    long len = read_vint_length(file);
-    long pos = get_current_byte(file);
+    EBML_int len = read_vint_length(file);
+    EBML_int pos = get_current_byte(file);
 
     int code = 0, code_len = 0;
     while (pos + len > get_current_byte(file)) {

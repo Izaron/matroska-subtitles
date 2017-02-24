@@ -1,9 +1,9 @@
 #ifndef EBML_PARSER_H
 #define EBML_PARSER_H
 
-/* EBML header ids */
 #include <stdio.h>
 
+/* EBML header ids */
 #define EBML_EBML_HEADER 0x1A45DFA3
 #define EBML_EBML_VERSION 0x4286
 #define EBML_EBML_READ_VERSION 0x42F7
@@ -117,19 +117,23 @@
 /* Boilerplate code */
 #define EBML_SWITCH_BREAK(a,b) (a)=0;(b)=0;break
 
-void skip_bytes(FILE* file, unsigned long n);
-void set_bytes(FILE* file, unsigned long n);
-unsigned long get_current_byte(FILE* file);
-unsigned char* read_bytes(FILE* file, unsigned long n);
-unsigned char read_byte(FILE* file);
+/* Typedefs */
+typedef unsigned long EBML_int;
+typedef unsigned char EBML_byte;
 
-unsigned long read_vint_length(FILE* file);
-unsigned char* read_vint_block(FILE* file);
-unsigned long read_vint_block_int(FILE* file);
-unsigned char* read_vint_block_string(FILE* file);
+void skip_bytes(FILE* file, EBML_int n);
+void set_bytes(FILE* file, EBML_int n);
+EBML_int get_current_byte(FILE* file);
+EBML_byte* read_bytes(FILE* file, EBML_int n);
+EBML_byte read_byte(FILE* file);
+
+EBML_int read_vint_length(FILE* file);
+EBML_byte* read_vint_block(FILE* file);
+EBML_int read_vint_block_int(FILE* file);
+EBML_byte* read_vint_block_string(FILE* file);
 void read_vint_block_skip(FILE* file);
 
-char* get_track_entry_type_description(unsigned long type);
+char* get_track_entry_type_description(EBML_int type);
 
 void parse_ebml(FILE* file);
 void parse_segment_info(FILE* file);
