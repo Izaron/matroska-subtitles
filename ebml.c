@@ -68,13 +68,21 @@
 #define EBML_SEGMENT_TRACK_AUDIO 0xE1
 #define EBML_SEGMENT_TRACK_TRACK_OPERATION 0xE2
 #define EBML_SEGMENT_TRACK_CONTENT_ENCODINGS 0x6D80
-/* DEFENCE FROM THE FOOL - there are can deprecated ids in using ... */
-#define EBML_SEGMENT_TRACK_TRACK_TIMECODE_SCALE 0x23314F
-#define EBML_SEGMENT_TRACK_TRACK_OFFSET 0x537F
 
 /* Misc ids */
 #define EBML_VOID 0xEC
 #define EBML_CRC32 0xBF
+
+/* DEFENCE FROM THE FOOL - deprecated IDs */
+#define EBML_SEGMENT_TRACK_TRACK_TIMECODE_SCALE 0x23314F
+#define EBML_SEGMENT_TRACK_TRACK_OFFSET 0x537F
+
+/* DivX trick track extenstions (in track entry) */
+#define EBML_SEGMENT_TRACK_TRICK_TRACK_UID 0xC0
+#define EBML_SEGMENT_TRACK_TRICK_TRACK_SEGMENT_UID 0xC1
+#define EBML_SEGMENT_TRACK_TRICK_TRACK_FLAG 0xC6
+#define EBML_SEGMENT_TRACK_TRICK_MASTER_TRACK_UID 0xC7
+#define EBML_SEGMENT_TRACK_TRICK_MASTER_TRACK_SEGMENT_UID 0xC4
 
 /* Other defines */
 #define EBML_MAX_ID_LENGTH 4
@@ -410,6 +418,23 @@ void parse_segment_track_entry(FILE* file) {
                 read_vint_block_skip(file);
                 EBML_SWITCH_BREAK(code, code_len);
 
+            /* DivX trick track extenstions */
+            case EBML_SEGMENT_TRACK_TRICK_TRACK_UID:
+                read_vint_block_skip(file);
+                EBML_SWITCH_BREAK(code, code_len);
+            case EBML_SEGMENT_TRACK_TRICK_TRACK_SEGMENT_UID:
+                read_vint_block_skip(file);
+                EBML_SWITCH_BREAK(code, code_len);
+            case EBML_SEGMENT_TRACK_TRICK_TRACK_FLAG:
+                read_vint_block_skip(file);
+                EBML_SWITCH_BREAK(code, code_len);
+            case EBML_SEGMENT_TRACK_TRICK_MASTER_TRACK_UID:
+                read_vint_block_skip(file);
+                EBML_SWITCH_BREAK(code, code_len);
+            case EBML_SEGMENT_TRACK_TRICK_MASTER_TRACK_SEGMENT_UID:
+                read_vint_block_skip(file);
+                EBML_SWITCH_BREAK(code, code_len);
+
             /* Misc ids */
             case EBML_VOID:
                 read_vint_block_skip(file);
@@ -519,6 +544,10 @@ void parse_segment(FILE* file) {
 
 void parse(FILE* file) {
     int code = 0, code_len = 0;
+    if (file == NULL) {
+        printf(EBML_ERROR "can't open file. Is it exists?");
+        return;
+    }
     while (!feof(file)) {
         code <<= 8;
         code += read_byte(file);
