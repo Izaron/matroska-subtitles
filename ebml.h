@@ -40,6 +40,27 @@
 #define EBML_SEGMENT_MUXING_APP 0x4D80
 #define EBML_SEGMENT_WRITING_APP 0x5741
 
+/* Segment cluster ids */
+#define EBML_SEGMENT_CLUSTER_TIMECODE 0xE7
+#define EBML_SEGMENT_CLUSTER_SILENT_TRACKS 0x5854
+#define EBML_SEGMENT_CLUSTER_POSITION 0xA7
+#define EBML_SEGMENT_CLUSTER_PREV_SIZE 0xAB
+#define EBML_SEGMENT_CLUSTER_SIMPLE_BLOCK 0xA3
+#define EBML_SEGMENT_CLUSTER_ENCRYPTED_BLOCK 0xAF
+
+/* Segment cluster block group ids */
+#define EBML_SEGMENT_CLUSTER_BLOCK_GROUP 0xA0
+#define EBML_SEGMENT_CLUSTER_BLOCK_GROUP_BLOCK 0xA1
+#define EBML_SEGMENT_CLUSTER_BLOCK_GROUP_BLOCK_VIRTUAL 0xA2
+#define EBML_SEGMENT_CLUSTER_BLOCK_GROUP_BLOCK_ADDITIONS 0x75A1
+#define EBML_SEGMENT_CLUSTER_BLOCK_GROUP_BLOCK_DURATION 0x9B
+#define EBML_SEGMENT_CLUSTER_BLOCK_GROUP_REFERENCE_PRIORITY 0xFA
+#define EBML_SEGMENT_CLUSTER_BLOCK_GROUP_REFERENCE_BLOCK 0xFB
+#define EBML_SEGMENT_CLUSTER_BLOCK_GROUP_CODEC_STATE 0xA4
+#define EBML_SEGMENT_CLUSTER_BLOCK_GROUP_DISCARD_PADDING 0x75A2
+#define EBML_SEGMENT_CLUSTER_BLOCK_GROUP_SLICES 0x8E
+#define EBML_SEGMENT_CLUSTER_BLOCK_GROUP_REFERENCE_FRAME 0xC8
+
 /* Segment tracks ids */
 #define EBML_SEGMENT_TRACK_ENTRY 0xAE
 #define EBML_SEGMENT_TRACK_TRACK_NUMBER 0xD7
@@ -96,10 +117,10 @@
 /* Boilerplate code */
 #define EBML_SWITCH_BREAK(a,b) (a)=0;(b)=0;break
 
-void skip_bytes(FILE* file, long n);
-void set_bytes(FILE* file, long n);
-long get_current_byte(FILE* file);
-unsigned char* read_bytes(FILE* file, size_t n);
+void skip_bytes(FILE* file, unsigned long n);
+void set_bytes(FILE* file, unsigned long n);
+unsigned long get_current_byte(FILE* file);
+unsigned char* read_bytes(FILE* file, unsigned long n);
 unsigned char read_byte(FILE* file);
 
 unsigned long read_vint_length(FILE* file);
@@ -108,7 +129,7 @@ unsigned long read_vint_block_int(FILE* file);
 unsigned char* read_vint_block_string(FILE* file);
 void read_vint_block_skip(FILE* file);
 
-char* get_track_entry_type_description(long type);
+char* get_track_entry_type_description(unsigned long type);
 
 void parse_ebml(FILE* file);
 void parse_segment_info(FILE* file);

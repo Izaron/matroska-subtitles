@@ -3,19 +3,19 @@
 #include <memory.h>
 #include "ebml.h"
 
-void skip_bytes(FILE* file, long n) {
+void skip_bytes(FILE* file, unsigned long n) {
     fseek(file, n, SEEK_CUR);
 }
 
-void set_bytes(FILE* file, long n) {
+void set_bytes(FILE* file, unsigned long n) {
     fseek(file, n, SEEK_SET);
 }
 
-long get_current_byte(FILE* file) {
-    return ftell(file);
+unsigned long get_current_byte(FILE* file) {
+    return (unsigned long) ftell(file);
 }
 
-unsigned char* read_bytes(FILE* file, size_t n) {
+unsigned char* read_bytes(FILE* file, unsigned  long n) {
     unsigned char* buffer = malloc(sizeof(unsigned char) * n);
     fread(buffer, 1, n, file);
     return buffer;
@@ -115,7 +115,8 @@ void parse_ebml(FILE* file) {
                 EBML_SWITCH_BREAK(code, code_len);
             default:
                 if (code_len == EBML_MAX_ID_LENGTH) {
-                    printf (EBML_ERROR "Unknown ID 0x%x, skipping EBML block\n", code);
+                    printf (EBML_ERROR "Unknown element 0x%x at position %ld, skipping EBML block\n", code,
+                            get_current_byte(file) - EBML_MAX_ID_LENGTH);
                     set_bytes(file, pos + len);
                     return;
                 }
@@ -188,7 +189,8 @@ void parse_segment_info(FILE* file) {
                 EBML_SWITCH_BREAK(code, code_len);
             default:
                 if (code_len == EBML_MAX_ID_LENGTH) {
-                    printf (EBML_ERROR "Unknown ID 0x%x, skipping segment info block\n", code);
+                    printf (EBML_ERROR "Unknown element 0x%x at position %ld, skipping segment info block\n", code,
+                            get_current_byte(file) - EBML_MAX_ID_LENGTH);
                     set_bytes(file, pos + len);
                     return;
                 }
@@ -197,7 +199,140 @@ void parse_segment_info(FILE* file) {
     }
 }
 
-char* get_track_entry_type_description(long type) {
+void parse_segment_cluster_block_group_block(FILE* file) {
+    long len = read_vint_length(file);
+    long pos = get_current_byte(file);
+    long track_number = read_vint_length(file);     // track number is length, not int
+    if (track_number < 4) {
+        set_bytes(file, pos + len);
+        return;
+    }
+
+    long timecode = read_byte(file);
+    timecode <<= 8; timecode += read_byte(file);
+
+    read_byte(file);    // skip one byte
+
+    read_bytes(file, pos + len - get_current_byte(file));
+    //printf("%s\n\n", read_bytes(file, pos + len - get_current_byte(file)));
+}
+
+void parse_segment_cluster_block_group(FILE* file) {
+    long len = read_vint_length(file);
+    long pos = get_current_byte(file);
+
+    int code = 0, code_len = 0;
+    while (pos + len > get_current_byte(file)) {
+        code <<= 8;
+        code += read_byte(file);
+        code_len++;
+
+        switch (code) {
+            /* Segment cluster block group ids */
+            case EBML_SEGMENT_CLUSTER_BLOCK_GROUP_BLOCK:
+                parse_segment_cluster_block_group_block(file);
+                EBML_SWITCH_BREAK(code, code_len);
+            case EBML_SEGMENT_CLUSTER_BLOCK_GROUP_BLOCK_VIRTUAL:
+                read_vint_block_skip(file);
+                EBML_SWITCH_BREAK(code, code_len);
+            case EBML_SEGMENT_CLUSTER_BLOCK_GROUP_BLOCK_ADDITIONS:
+                read_vint_block_skip(file);
+                EBML_SWITCH_BREAK(code, code_len);
+            case EBML_SEGMENT_CLUSTER_BLOCK_GROUP_BLOCK_DURATION:
+                read_vint_block_skip(file);
+                EBML_SWITCH_BREAK(code, code_len);
+            case EBML_SEGMENT_CLUSTER_BLOCK_GROUP_REFERENCE_PRIORITY:
+                read_vint_block_skip(file);
+                EBML_SWITCH_BREAK(code, code_len);
+            case EBML_SEGMENT_CLUSTER_BLOCK_GROUP_REFERENCE_BLOCK:
+                read_vint_block_skip(file);
+                EBML_SWITCH_BREAK(code, code_len);
+            case EBML_SEGMENT_CLUSTER_BLOCK_GROUP_CODEC_STATE:
+                read_vint_block_skip(file);
+                EBML_SWITCH_BREAK(code, code_len);
+            case EBML_SEGMENT_CLUSTER_BLOCK_GROUP_DISCARD_PADDING:
+                read_vint_block_skip(file);
+                EBML_SWITCH_BREAK(code, code_len);
+            case EBML_SEGMENT_CLUSTER_BLOCK_GROUP_SLICES:
+                read_vint_block_skip(file);
+                EBML_SWITCH_BREAK(code, code_len);
+            case EBML_SEGMENT_CLUSTER_BLOCK_GROUP_REFERENCE_FRAME:
+                read_vint_block_skip(file);
+                EBML_SWITCH_BREAK(code, code_len);
+
+            /* Misc ids */
+            case EBML_VOID:
+                read_vint_block_skip(file);
+                EBML_SWITCH_BREAK(code, code_len);
+            case EBML_CRC32:
+                read_vint_block_skip(file);
+                EBML_SWITCH_BREAK(code, code_len);
+            default:
+                if (code_len == EBML_MAX_ID_LENGTH) {
+                    printf (EBML_ERROR "Unknown element 0x%x at position %ld, skipping segment cluster block group\n", code,
+                            get_current_byte(file) - EBML_MAX_ID_LENGTH);
+                    set_bytes(file, pos + len);
+                    return;
+                }
+                break;
+        }
+    }
+}
+
+void parse_segment_cluster(FILE* file) {
+    long len = read_vint_length(file);
+    long pos = get_current_byte(file);
+
+    int code = 0, code_len = 0;
+    while (pos + len > get_current_byte(file)) {
+        code <<= 8;
+        code += read_byte(file);
+        code_len++;
+
+        switch (code) {
+            /* Segment cluster ids */
+            case EBML_SEGMENT_CLUSTER_TIMECODE:
+                read_vint_block_skip(file);
+                EBML_SWITCH_BREAK(code, code_len);
+            case EBML_SEGMENT_CLUSTER_SILENT_TRACKS:
+                read_vint_block_skip(file);
+                EBML_SWITCH_BREAK(code, code_len);
+            case EBML_SEGMENT_CLUSTER_POSITION:
+                read_vint_block_skip(file);
+                EBML_SWITCH_BREAK(code, code_len);
+            case EBML_SEGMENT_CLUSTER_PREV_SIZE:
+                read_vint_block_skip(file);
+                EBML_SWITCH_BREAK(code, code_len);
+            case EBML_SEGMENT_CLUSTER_SIMPLE_BLOCK:
+                read_vint_block_skip(file);
+                EBML_SWITCH_BREAK(code, code_len);
+            case EBML_SEGMENT_CLUSTER_BLOCK_GROUP:
+                parse_segment_cluster_block_group(file);
+                EBML_SWITCH_BREAK(code, code_len);
+            case EBML_SEGMENT_CLUSTER_ENCRYPTED_BLOCK:
+                read_vint_block_skip(file);
+                EBML_SWITCH_BREAK(code, code_len);
+
+            /* Misc ids */
+            case EBML_VOID:
+                read_vint_block_skip(file);
+                EBML_SWITCH_BREAK(code, code_len);
+            case EBML_CRC32:
+                read_vint_block_skip(file);
+                EBML_SWITCH_BREAK(code, code_len);
+            default:
+                if (code_len == EBML_MAX_ID_LENGTH) {
+                    printf (EBML_ERROR "Unknown element 0x%x at position %ld, skipping segment cluster block\n", code,
+                            get_current_byte(file) - EBML_MAX_ID_LENGTH);
+                    set_bytes(file, pos + len);
+                    return;
+                }
+                break;
+        }
+    }
+}
+
+char* get_track_entry_type_description(unsigned long type) {
     switch (type) {
         case 1:
             return "video";
@@ -317,11 +452,13 @@ void parse_segment_track_entry(FILE* file) {
 
             /* Deprecated IDs */
             case EBML_SEGMENT_TRACK_TRACK_TIMECODE_SCALE:
-                printf(EBML_WARNING "deprecated ID 0x%x on position %ld\n", code, get_current_byte(file));
+                printf(EBML_WARNING "Deprecated element 0x%x at position %ld\n", code,
+                       get_current_byte(file) - 3); // minus length of the ID
                 read_vint_block_skip(file);
                 EBML_SWITCH_BREAK(code, code_len);
             case EBML_SEGMENT_TRACK_TRACK_OFFSET:
-                printf(EBML_WARNING "deprecated ID 0x%x on position %ld\n", code, get_current_byte(file));
+                printf(EBML_WARNING "Deprecated element 0x%x at position %ld\n", code,
+                       get_current_byte(file) - 2); // minus length of the ID
                 read_vint_block_skip(file);
                 EBML_SWITCH_BREAK(code, code_len);
 
@@ -351,7 +488,8 @@ void parse_segment_track_entry(FILE* file) {
                 EBML_SWITCH_BREAK(code, code_len);
             default:
                 if (code_len == EBML_MAX_ID_LENGTH) {
-                    printf(EBML_ERROR "Unknown ID 0x%x, skipping segment track entry block\n", code);
+                    printf(EBML_ERROR "Unknown element 0x%x at position %ld, skipping segment track entry block\n", code,
+                           get_current_byte(file) - EBML_MAX_ID_LENGTH);
                     set_bytes(file, pos + len);
                     return;
                 }
@@ -385,7 +523,8 @@ void parse_segment_tracks(FILE* file) {
                 EBML_SWITCH_BREAK(code, code_len);
             default:
                 if (code_len == EBML_MAX_ID_LENGTH) {
-                    printf(EBML_ERROR "Unknown ID 0x%x, skipping segment tracks block\n", code);
+                    printf(EBML_ERROR "Unknown element 0x%x at position %ld, skipping segment tracks block\n", code,
+                           get_current_byte(file) - EBML_MAX_ID_LENGTH);
                     set_bytes(file, pos + len);
                     return;
                 }
@@ -413,7 +552,8 @@ void parse_segment(FILE* file) {
                 parse_segment_info(file);
                 EBML_SWITCH_BREAK(code, code_len);
             case EBML_SEGMENT_CLUSTER:
-                read_vint_block_skip(file);
+                //read_vint_block_skip(file);
+                parse_segment_cluster(file);
                 EBML_SWITCH_BREAK(code, code_len);
             case EBML_SEGMENT_TRACKS:
                 parse_segment_tracks(file);
@@ -440,7 +580,8 @@ void parse_segment(FILE* file) {
                 EBML_SWITCH_BREAK(code, code_len);
             default:
                 if (code_len == EBML_MAX_ID_LENGTH) {
-                    printf (EBML_ERROR "Unknown ID 0x%x, skipping segment block\n", code);
+                    printf (EBML_ERROR "Unknown element 0x%x at position %ld, skipping segment block\n", code,
+                            get_current_byte(file) - EBML_MAX_ID_LENGTH);
                     set_bytes(file, pos + len);
                     return;
                 }
@@ -478,7 +619,8 @@ void parse(FILE* file) {
                 EBML_SWITCH_BREAK(code, code_len);
             default:
                 if (code_len == EBML_MAX_ID_LENGTH) {
-                    printf (EBML_ERROR "Unknown ID 0x%x, skipping file parsing\n", code);
+                    printf (EBML_ERROR "Unknown element 0x%x at position %ld, skipping file parsing\n", code,
+                            get_current_byte(file) - EBML_MAX_ID_LENGTH);
                     return;
                 }
                 break;
