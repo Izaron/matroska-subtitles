@@ -7,7 +7,7 @@
 #include <string.h>
 #include "matroska.h"
 
-struct ebml_sub_track* sub_tracks[MATROSKA_MAX_TRACKS];
+struct matroska_sub_track* sub_tracks[MATROSKA_MAX_TRACKS];
 char* filename;
 
 void skip_bytes(FILE* file, matroska_int n) {
@@ -230,7 +230,7 @@ int find_sub_track_index(matroska_int track_number) {
     return -1;
 }
 
-struct ebml_sub_sentence* parse_segment_cluster_block_group_block(FILE* file, matroska_int cluster_timecode) {
+struct matroska_sub_sentence* parse_segment_cluster_block_group_block(FILE* file, matroska_int cluster_timecode) {
     matroska_int len = read_vint_length(file);
     matroska_int pos = get_current_byte(file);
     matroska_int track_number = read_vint_length(file);     // track number is length, not int
@@ -249,13 +249,13 @@ struct ebml_sub_sentence* parse_segment_cluster_block_group_block(FILE* file, ma
     matroska_int size = pos + len - get_current_byte(file);
     matroska_byte * message = read_bytes(file, size);
 
-    struct ebml_sub_sentence* sentence = malloc(sizeof(struct ebml_sub_sentence));
+    struct matroska_sub_sentence* sentence = malloc(sizeof(struct matroska_sub_sentence));
     sentence->text = message;
     sentence->text_size = size;
     sentence->time_start = timecode + cluster_timecode;
 
-    struct ebml_sub_track* track = sub_tracks[sub_track_index];
-    track->sentences = realloc(track->sentences, sizeof(struct ebml_sub_track*) * (track->sentence_count + 1));
+    struct matroska_sub_track* track = sub_tracks[sub_track_index];
+    track->sentences = realloc(track->sentences, sizeof(struct matroska_sub_track*) * (track->sentence_count + 1));
     track->sentences[track->sentence_count] = sentence;
     track->sentence_count++;
 
@@ -279,8 +279,8 @@ void parse_segment_cluster_block_group(FILE* file, matroska_int cluster_timecode
     matroska_int pos = get_current_byte(file);
 
     matroska_int block_duration = ULONG_MAX;
-    struct ebml_sub_sentence* new_sentence;
-    struct ebml_sub_sentence** sentence_list = NULL;
+    struct matroska_sub_sentence* new_sentence;
+    struct matroska_sub_sentence** sentence_list = NULL;
     int sentence_count = 0;
 
     int code = 0, code_len = 0;
@@ -294,7 +294,7 @@ void parse_segment_cluster_block_group(FILE* file, matroska_int cluster_timecode
             case MATROSKA_SEGMENT_CLUSTER_BLOCK_GROUP_BLOCK:
                 new_sentence = parse_segment_cluster_block_group_block(file, cluster_timecode);
                 if (new_sentence != NULL) {
-                    sentence_list = realloc(sentence_list, sizeof(struct ebml_sub_track*) * (sentence_count + 1));
+                    sentence_list = realloc(sentence_list, sizeof(struct matroska_sub_track*) * (sentence_count + 1));
                     sentence_list[sentence_count] = new_sentence;
                     sentence_count++;
                 }
@@ -590,7 +590,7 @@ void parse_segment_track_entry(FILE* file) {
         int index = 0;
         while (sub_tracks[index] != NULL)
             index++;
-        sub_tracks[index] = malloc(sizeof(struct ebml_sub_track));
+        sub_tracks[index] = malloc(sizeof(struct matroska_sub_track));
         sub_tracks[index]->track_number = track_number;
         sub_tracks[index]->lang = lang;
         sub_tracks[index]->lang_index = 0;
@@ -695,7 +695,7 @@ void parse_segment(FILE* file) {
     }
 }
 
-char* generate_filename_from_track(struct ebml_sub_track* track) {
+char* generate_filename_from_track(struct matroska_sub_track* track) {
     char* buf = malloc(sizeof(char) * 200);
     if (track->lang_index == 0)
         sprintf(buf, "%s_%s.srt", filename, track->lang);
@@ -706,14 +706,14 @@ char* generate_filename_from_track(struct ebml_sub_track* track) {
     return buf;
 }
 
-void save_sub_track(struct ebml_sub_track* track) {
+void save_sub_track(struct matroska_sub_track* track) {
     int desc = open(generate_filename_from_track(track), O_WRONLY | O_CREAT | O_TRUNC | O_APPEND, S_IWUSR | S_IRUSR);
 
     if (track->header != NULL)
         write(desc, track->header, strlen(track->header));
 
     for (int i = 0; i < track->sentence_count; i++) {
-        struct ebml_sub_sentence* sentence = track->sentences[i];
+        struct matroska_sub_sentence* sentence = track->sentences[i];
 
         char number[9];
         sprintf(number, "%d", i + 1);
