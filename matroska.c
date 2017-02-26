@@ -28,21 +28,13 @@ matroska_byte* read_bytes(FILE* file, matroska_int n) {
 }
 
 matroska_byte read_byte(FILE* file) {
-    matroska_byte ch;
-    fread(&ch, 1, 1, file);
-    return ch;
+    return (matroska_byte) fgetc(file);
 }
 
 matroska_int read_vint_length(FILE* file) {
     matroska_byte ch = read_byte(file);
-    int cnt = 1;
-    for (int i = 7; i >= 0; i--) {
-        if ((ch & (1 << i)) != 0) {
-            ch ^= (1 << i);
-            break;
-        } else
-            cnt++;
-    }
+    int cnt = __builtin_clz(ch) + 1 - 24;
+    ch ^= (1 << (8 - cnt));
     matroska_int ret = ch;
     for (int i = 1; i < cnt; i++) {
         ret <<= 8;
