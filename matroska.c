@@ -815,7 +815,7 @@ int main(int argc, char** argv) {
     for (int i = 1; i < argc; i++) {
         printf("======================= New video file: %s =======================\n", argv[i]);
         FILE *file;
-        mkv_ctx = malloc(sizeof(mkv_ctx));
+        mkv_ctx = malloc(sizeof(struct matroska_ctx));
         mkv_ctx->sub_tracks_count = 0;
         mkv_ctx->filename = argv[i];
         file = fopen(argv[i], "r");
