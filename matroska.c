@@ -438,8 +438,9 @@ void parse_segment_track_entry(FILE* file) {
     matroska_int pos = get_current_byte(file);
 
     matroska_int track_number = 0;
-    enum matroska_track_entry_type track_type = MATROSKA_TRACK_TYPE_SUBTITLE;
+    enum matroska_track_entry_type track_type = MATROSKA_TRACK_TYPE_VIDEO;
     matroska_byte* lang = (matroska_byte *) "eng";
+    matroska_byte* header = NULL;
 
     int code = 0, code_len = 0;
     while (pos + len > get_current_byte(file)) {
@@ -498,7 +499,11 @@ void parse_segment_track_entry(FILE* file) {
                 MATROSKA_SWITCH_BREAK(code, code_len);
             case MATROSKA_SEGMENT_TRACK_CODEC_PRIVATE:
                 // WARNING - this string can contain headers for some formats of subtitles!
-                read_vint_block_skip(file);
+                if (track_type == MATROSKA_TRACK_TYPE_SUBTITLE) {
+                    header = read_vint_block_string(file);
+                } else {
+                    read_vint_block_skip(file);
+                }
                 MATROSKA_SWITCH_BREAK(code, code_len);
             case MATROSKA_SEGMENT_TRACK_CODEC_NAME:
                 read_vint_block_skip(file);
@@ -589,6 +594,8 @@ void parse_segment_track_entry(FILE* file) {
         sub_tracks[index]->track_number = track_number;
         sub_tracks[index]->lang = lang;
         sub_tracks[index]->lang_index = 0;
+        sub_tracks[index]->header = header;
+
         sub_tracks[index]->sentence_count = 0;
         for (int i = 0; i < index; i++)
             if (strcmp((const char *) sub_tracks[i]->lang, (const char *) lang) == 0)
@@ -689,6 +696,9 @@ void parse_segment(FILE* file) {
 }
 
 void save_sub_track(struct ebml_sub_track* track) {
+    if (track->header != NULL)
+        write(1, track->header, strlen(track->header));
+
     for (int i = 0; i < track->sentence_count; i++) {
         struct ebml_sub_sentence* sentence = track->sentences[i];
 

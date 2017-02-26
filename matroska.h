@@ -147,6 +147,7 @@ struct ebml_sub_track {
     matroska_int track_number;
     matroska_byte* lang;
     matroska_int lang_index;
+    matroska_byte* header;
 
     int sentence_count;
     struct ebml_sub_sentence** sentences;
