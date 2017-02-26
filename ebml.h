@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 
+#define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
+
 /* EBML header ids */
 #define EBML_EBML_HEADER 0x1A45DFA3
 #define EBML_EBML_VERSION 0x4286
@@ -109,7 +111,7 @@
 /* Other defines */
 #define EBML_MAX_ID_LENGTH 4
 #define EBML_TRACK_TYPE_CODE_SUBTITLE 0x11
-#define EBML_MAX_TRACK_NUMBER 128
+#define EBML_MAX_TRACKS 128
 
 /* Messages */
 #define EBML_INFO "Matroska parser info: "
@@ -120,25 +122,46 @@
 #define EBML_SWITCH_BREAK(a,b) (a)=0;(b)=0;break
 
 /* Typedefs */
-typedef unsigned long EBML_int;
-typedef unsigned char EBML_byte;
+typedef unsigned long ebml_int;
+typedef unsigned char ebml_byte;
 
-void skip_bytes(FILE* file, EBML_int n);
-void set_bytes(FILE* file, EBML_int n);
-EBML_int get_current_byte(FILE* file);
-EBML_byte* read_bytes(FILE* file, EBML_int n);
-EBML_byte read_byte(FILE* file);
+/* Structures */
+struct ebml_sub_sentence {
+    ebml_byte* text;
+    ebml_int text_size;
+    ebml_int time_start;
+    ebml_int time_end;
+};
 
-EBML_int read_vint_length(FILE* file);
-EBML_byte* read_vint_block(FILE* file);
-EBML_int read_vint_block_int(FILE* file);
-EBML_byte* read_vint_block_string(FILE* file);
+struct ebml_sub_track {
+    ebml_int track_number;
+    ebml_byte* lang;
+    ebml_int lang_index;
+
+    int sentence_count;
+    struct ebml_sub_sentence** sentences;
+};
+
+/* Functions */
+void skip_bytes(FILE* file, ebml_int n);
+void set_bytes(FILE* file, ebml_int n);
+ebml_int get_current_byte(FILE* file);
+ebml_byte* read_bytes(FILE* file, ebml_int n);
+ebml_byte read_byte(FILE* file);
+
+ebml_int read_vint_length(FILE* file);
+ebml_byte* read_vint_block(FILE* file);
+ebml_int read_vint_block_int(FILE* file);
+ebml_byte* read_vint_block_string(FILE* file);
 void read_vint_block_skip(FILE* file);
 
-char* get_track_entry_type_description(EBML_int type);
+char* get_track_entry_type_description(ebml_int type);
 
 void parse_ebml(FILE* file);
 void parse_segment_info(FILE* file);
+struct ebml_sub_sentence* parse_segment_cluster_block_group_block(FILE* file, ebml_int cluster_timecode);
+void parse_segment_cluster_block_group(FILE* file, ebml_int cluster_timecode);
+void parse_segment_cluster(FILE* file);
 void parse_segment_track_entry(FILE* file);
 void parse_segment_tracks(FILE* file);
 void parse_segment(FILE* file);

@@ -1,36 +1,40 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <limits.h>
+#include <string.h>
 #include "ebml.h"
 
-int is_track_subtitle[EBML_MAX_TRACK_NUMBER];
+struct ebml_sub_track* sub_tracks[EBML_MAX_TRACKS];
 
-void skip_bytes(FILE* file, EBML_int n) {
+void skip_bytes(FILE* file, ebml_int n) {
     fseek(file, n, SEEK_CUR);
 }
 
-void set_bytes(FILE* file, EBML_int n) {
+void set_bytes(FILE* file, ebml_int n) {
     fseek(file, n, SEEK_SET);
 }
 
-EBML_int get_current_byte(FILE* file) {
-    return (EBML_int) ftell(file);
+ebml_int get_current_byte(FILE* file) {
+    return (ebml_int) ftell(file);
 }
 
-EBML_byte* read_bytes(FILE* file, EBML_int n) {
-    EBML_byte* buffer = malloc(sizeof(EBML_byte) * n);
+ebml_byte* read_bytes(FILE* file, ebml_int n) {
+    ebml_byte* buffer = malloc(sizeof(ebml_byte) * n);
     fread(buffer, 1, n, file);
     return buffer;
 }
 
-EBML_byte read_byte(FILE* file) {
-    EBML_byte ch;
+ebml_byte read_byte(FILE* file) {
+    ebml_byte ch;
     fread(&ch, 1, 1, file);
     return ch;
 }
 
-EBML_int read_vint_length(FILE* file) {
-    EBML_byte ch = read_byte(file);
+ebml_int read_vint_length(FILE* file) {
+    ebml_byte ch = read_byte(file);
     int cnt = 1;
     for (int i = 7; i >= 0; i--) {
         if ((ch & (1 << i)) != 0) {
@@ -39,7 +43,7 @@ EBML_int read_vint_length(FILE* file) {
         } else
             cnt++;
     }
-    EBML_int ret = ch;
+    ebml_int ret = ch;
     for (int i = 1; i < cnt; i++) {
         ret <<= 8;
         ret += read_byte(file);
@@ -47,16 +51,16 @@ EBML_int read_vint_length(FILE* file) {
     return ret;
 }
 
-EBML_byte* read_vint_block(FILE* file) {
-    EBML_int len = read_vint_length(file);
+ebml_byte* read_vint_block(FILE* file) {
+    ebml_int len = read_vint_length(file);
     return read_bytes(file, len);
 }
 
-EBML_int read_vint_block_int(FILE* file) {
-    EBML_int len = read_vint_length(file);
-    EBML_byte* s = read_bytes(file, len);
+ebml_int read_vint_block_int(FILE* file) {
+    ebml_int len = read_vint_length(file);
+    ebml_byte* s = read_bytes(file, len);
 
-    EBML_int res = 0;
+    ebml_int res = 0;
     for (int i = 0; i < len; i++) {
         res <<= 8;
         res += s[i];
@@ -65,18 +69,18 @@ EBML_int read_vint_block_int(FILE* file) {
     return res;
 }
 
-EBML_byte* read_vint_block_string(FILE* file) {
+ebml_byte* read_vint_block_string(FILE* file) {
     return read_vint_block(file);
 }
 
 void read_vint_block_skip(FILE* file) {
-    EBML_int len = read_vint_length(file);
+    ebml_int len = read_vint_length(file);
     skip_bytes(file, len);
 }
 
 void parse_ebml(FILE* file) {
-    EBML_int len = read_vint_length(file);
-    EBML_int pos = get_current_byte(file);
+    ebml_int len = read_vint_length(file);
+    ebml_int pos = get_current_byte(file);
 
     int code = 0, code_len = 0;
     while (pos + len > get_current_byte(file)) {
@@ -128,8 +132,8 @@ void parse_ebml(FILE* file) {
 }
 
 void parse_segment_info(FILE* file) {
-    EBML_int len = read_vint_length(file);
-    EBML_int pos = get_current_byte(file);
+    ebml_int len = read_vint_length(file);
+    ebml_int pos = get_current_byte(file);
 
     int code = 0, code_len = 0;
     while (pos + len > get_current_byte(file)) {
@@ -201,31 +205,82 @@ void parse_segment_info(FILE* file) {
     }
 }
 
-void parse_segment_cluster_block_group_block(FILE* file, EBML_int cluster_timecode) {
-    EBML_int len = read_vint_length(file);
-    EBML_int pos = get_current_byte(file);
-    EBML_int track_number = read_vint_length(file);     // track number is length, not int
+char* generate_timestamp(ebml_int milliseconds) {
+    ebml_int millis = milliseconds % 1000;
+    milliseconds /= 1000;
+    ebml_int seconds = milliseconds % 60;
+    milliseconds /= 60;
+    ebml_int minutes = milliseconds % 60;
+    milliseconds /= 60;
+    ebml_int hours = milliseconds;
 
-    if (!is_track_subtitle[track_number]) {
+    char* buf = malloc(sizeof(char) * 15);
+    sprintf(buf, "%02ld:%02ld:%02ld,%03ld", hours, minutes, seconds, millis);
+    return buf;
+}
+
+int find_sub_track_index(ebml_int track_number) {
+    int index = 0;
+    while (sub_tracks[index] != NULL) {
+        if (sub_tracks[index]->track_number == track_number)
+            return index;
+        index++;
+    }
+    return -1;
+}
+
+struct ebml_sub_sentence* parse_segment_cluster_block_group_block(FILE* file, ebml_int cluster_timecode) {
+    ebml_int len = read_vint_length(file);
+    ebml_int pos = get_current_byte(file);
+    ebml_int track_number = read_vint_length(file);     // track number is length, not int
+
+    int sub_track_index = find_sub_track_index(track_number);
+    if (sub_track_index == -1) {
         set_bytes(file, pos + len);
-        return;
+        return NULL;
     }
 
-    EBML_int timecode = read_byte(file);
+    ebml_int timecode = read_byte(file);
     timecode <<= 8; timecode += read_byte(file);
 
     read_byte(file);    // skip one byte
 
-    printf("Pos: %ld\n", get_current_byte(file));
-    printf("Time code: %ld\n", timecode + cluster_timecode);
-    printf("%s\n\n", read_bytes(file, pos + len - get_current_byte(file)));
+    ebml_int size = pos + len - get_current_byte(file);
+    ebml_byte * message = read_bytes(file, size);
+
+    struct ebml_sub_sentence* sentence = malloc(sizeof(struct ebml_sub_sentence));
+    sentence->text = message;
+    sentence->text_size = size;
+    sentence->time_start = timecode + cluster_timecode;
+
+    struct ebml_sub_track* track = sub_tracks[sub_track_index];
+    track->sentences = realloc(track->sentences, sizeof(struct ebml_sub_track*) * (track->sentence_count + 1));
+    track->sentences[track->sentence_count] = sentence;
+    track->sentence_count++;
+
+    /*char buffer[15];
+    sprintf(buffer, "sub_.txt");
+
+    char* start_time = generate_timestamp(timecode + cluster_timecode);*/
+
+    /*int desc = open(buffer, O_CREAT | O_WRONLY | O_APPEND, S_IWUSR | S_IRUSR);
+    write(desc, start_time, strlen(start_time));
+    write(desc, "\n", 1);
+    write(desc, message, size);
+    write(desc, "\n\n", 2);
+    close(desc);*/
+
+    return sentence;
 }
 
-void parse_segment_cluster_block_group(FILE* file, EBML_int cluster_timecode) {
-    EBML_int len = read_vint_length(file);
-    EBML_int pos = get_current_byte(file);
+void parse_segment_cluster_block_group(FILE* file, ebml_int cluster_timecode) {
+    ebml_int len = read_vint_length(file);
+    ebml_int pos = get_current_byte(file);
 
-    EBML_int block_duration = 0;
+    ebml_int block_duration = ULONG_MAX;
+    struct ebml_sub_sentence* new_sentence;
+    struct ebml_sub_sentence** sentence_list = NULL;
+    int sentence_count = 0;
 
     int code = 0, code_len = 0;
     while (pos + len > get_current_byte(file)) {
@@ -236,7 +291,12 @@ void parse_segment_cluster_block_group(FILE* file, EBML_int cluster_timecode) {
         switch (code) {
             /* Segment cluster block group ids */
             case EBML_SEGMENT_CLUSTER_BLOCK_GROUP_BLOCK:
-                parse_segment_cluster_block_group_block(file, cluster_timecode);
+                new_sentence = parse_segment_cluster_block_group_block(file, cluster_timecode);
+                if (new_sentence != NULL) {
+                    sentence_list = realloc(sentence_list, sizeof(struct ebml_sub_track*) * (sentence_count + 1));
+                    sentence_list[sentence_count] = new_sentence;
+                    sentence_count++;
+                }
                 EBML_SWITCH_BREAK(code, code_len);
             case EBML_SEGMENT_CLUSTER_BLOCK_GROUP_BLOCK_VIRTUAL:
                 read_vint_block_skip(file);
@@ -283,13 +343,22 @@ void parse_segment_cluster_block_group(FILE* file, EBML_int cluster_timecode) {
                 break;
         }
     }
+
+    for (int i = 0; i < sentence_count; i++) {
+        // When BlockDuration is not written, the value is assumed to be the difference
+        // between the timestamp of this Block and the timestamp of the next Block in "display" order
+        if (block_duration == ULONG_MAX)
+            sentence_list[i]->time_end = ULONG_MAX;
+        else
+            sentence_list[i]->time_end = sentence_list[i]->time_start + block_duration;
+    }
 }
 
 void parse_segment_cluster(FILE* file) {
-    EBML_int len = read_vint_length(file);
-    EBML_int pos = get_current_byte(file);
+    ebml_int len = read_vint_length(file);
+    ebml_int pos = get_current_byte(file);
 
-    EBML_int timecode = 0;
+    ebml_int timecode = 0;
 
     int code = 0, code_len = 0;
     while (pos + len > get_current_byte(file)) {
@@ -312,6 +381,7 @@ void parse_segment_cluster(FILE* file) {
                 read_vint_block_skip(file);
                 EBML_SWITCH_BREAK(code, code_len);
             case EBML_SEGMENT_CLUSTER_SIMPLE_BLOCK:
+                // Same as Block inside the Block Group, but we can't save subs in this structure
                 read_vint_block_skip(file);
                 EBML_SWITCH_BREAK(code, code_len);
             case EBML_SEGMENT_CLUSTER_BLOCK_GROUP:
@@ -340,7 +410,7 @@ void parse_segment_cluster(FILE* file) {
     }
 }
 
-char* get_track_entry_type_description(EBML_int type) {
+char* get_track_entry_type_description(ebml_int type) {
     switch (type) {
         case 1:
             return "video";
@@ -364,12 +434,12 @@ char* get_track_entry_type_description(EBML_int type) {
 void parse_segment_track_entry(FILE* file) {
     printf("\n==== Track entry ====\n");
 
-    EBML_int len = read_vint_length(file);
-    EBML_int pos = get_current_byte(file);
+    ebml_int len = read_vint_length(file);
+    ebml_int pos = get_current_byte(file);
 
-    EBML_int track_number = 0;
-    EBML_int track_type = 0;
-    EBML_byte* lang = "";
+    ebml_int track_number = 0;
+    ebml_int track_type = 0;
+    ebml_byte* lang = (ebml_byte *) "eng";
 
     int code = 0, code_len = 0;
     while (pos + len > get_current_byte(file)) {
@@ -443,7 +513,7 @@ void parse_segment_track_entry(FILE* file) {
                 read_vint_block_skip(file);
                 EBML_SWITCH_BREAK(code, code_len);
             case EBML_SEGMENT_TRACK_CODEC_DELAY:
-                printf("Codec Delay: %ld\n", read_vint_block_int(file));
+                read_vint_block_skip(file);
                 EBML_SWITCH_BREAK(code, code_len);
             case EBML_SEGMENT_TRACK_SEEK_PRE_ROLL:
                 read_vint_block_skip(file);
@@ -512,15 +582,23 @@ void parse_segment_track_entry(FILE* file) {
     }
 
     if (track_type == EBML_TRACK_TYPE_CODE_SUBTITLE) {
-        is_track_subtitle[track_number] = 1;
+        int index = 0;
+        while (sub_tracks[index] != NULL)
+            index++;
+        sub_tracks[index] = malloc(sizeof(struct ebml_sub_track));
+        sub_tracks[index]->track_number = track_number;
+        sub_tracks[index]->lang = lang;
+        sub_tracks[index]->lang_index = 0;
+        sub_tracks[index]->sentence_count = 0;
+        for (int i = 0; i < index; i++)
+            if (strcmp((const char *) sub_tracks[i]->lang, (const char *) lang) == 0)
+                sub_tracks[index]->lang_index++;
     }
 }
 
 void parse_segment_tracks(FILE* file) {
-    EBML_int len = read_vint_length(file);
-    EBML_int pos = get_current_byte(file);
-
-    memset(is_track_subtitle, 0, sizeof(is_track_subtitle));
+    ebml_int len = read_vint_length(file);
+    ebml_int pos = get_current_byte(file);
 
     int code = 0, code_len = 0;
     while (pos + len > get_current_byte(file)) {
@@ -554,8 +632,8 @@ void parse_segment_tracks(FILE* file) {
 }
 
 void parse_segment(FILE* file) {
-    EBML_int len = read_vint_length(file);
-    EBML_int pos = get_current_byte(file);
+    ebml_int len = read_vint_length(file);
+    ebml_int pos = get_current_byte(file);
 
     int code = 0, code_len = 0;
     while (pos + len > get_current_byte(file)) {
@@ -610,6 +688,42 @@ void parse_segment(FILE* file) {
     }
 }
 
+void save_sub_track(struct ebml_sub_track* track) {
+    for (int i = 0; i < track->sentence_count; i++) {
+        struct ebml_sub_sentence* sentence = track->sentences[i];
+
+        char number[9];
+        sprintf(number, "%d", i + 1);
+
+        char* timestamp_start = generate_timestamp(sentence->time_start);
+        ebml_int time_end = sentence->time_end;
+        if (i + 1 < track->sentence_count)
+            time_end = MIN(time_end, track->sentences[i + 1]->time_start - 1);
+        char* timestamp_end = generate_timestamp(time_end);
+
+        write(1, number, strlen(number));
+        write(1, "\n", 1);
+        write(1, timestamp_start, strlen(timestamp_start));
+        write(1, " --> ", 5);
+        write(1, timestamp_end, strlen(timestamp_start));
+        write(1, "\n", 1);
+        write(1, sentence->text, sentence->text_size);
+        write(1, "\n\n", 2);
+    }
+
+    write(1, "\n\n\n\n\n\n\n\n\n\n", 10);
+    write(1, "============================================================\n", 31);
+    write(1, "\n\n\n\n\n\n\n\n\n\n", 10);
+}
+
+void save_all_sub_tracks() {
+    int index = 0;
+    while (sub_tracks[index] != NULL) {
+        save_sub_track(sub_tracks[index]);
+        index++;
+    }
+}
+
 void parse(FILE* file) {
     int code = 0, code_len = 0;
     if (file == NULL) {
@@ -647,6 +761,8 @@ void parse(FILE* file) {
         }
     }
     fclose(file);
+
+    save_all_sub_tracks();
 }
 
 int main(int argc, char** argv) {
