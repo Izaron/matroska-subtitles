@@ -410,21 +410,21 @@ void parse_segment_cluster(FILE* file) {
     }
 }
 
-char* get_track_entry_type_description(ebml_int type) {
+char* get_track_entry_type_description(enum matroska_track_entry_type type) {
     switch (type) {
-        case 1:
+        case MATROSKA_TRACK_TYPE_VIDEO:
             return "video";
-        case 2:
+        case MATROSKA_TRACK_TYPE_AUDIO:
             return "audio";
-        case 3:
+        case MATROSKA_TRACK_TYPE_COMPLEX:
             return "complex";
-        case 0x10:
+        case MATROSKA_TRACK_TYPE_LOGO:
             return "logo";
-        case 0x11:
+        case MATROSKA_TRACK_TYPE_SUBTITLE:
             return "subtitle";
-        case 0x12:
+        case MATROSKA_TRACK_TYPE_BUTTONS:
             return "buttons";
-        case 0x20:
+        case MATROSKA_TRACK_TYPE_CONTROL:
             return "control";
         default:
             return NULL;
@@ -438,7 +438,7 @@ void parse_segment_track_entry(FILE* file) {
     ebml_int pos = get_current_byte(file);
 
     ebml_int track_number = 0;
-    ebml_int track_type = 0;
+    enum matroska_track_entry_type track_type = MATROSKA_TRACK_TYPE_SUBTITLE;
     ebml_byte* lang = (ebml_byte *) "eng";
 
     int code = 0, code_len = 0;
@@ -456,7 +456,7 @@ void parse_segment_track_entry(FILE* file) {
                 printf("UID: %lu\n", read_vint_block_int(file));
                 MATROSKA_SWITCH_BREAK(code, code_len);
             case MATROSKA_SEGMENT_TRACK_TRACK_TYPE:
-                track_type = read_vint_block_int(file);
+                track_type = (enum matroska_track_entry_type) read_vint_block_int(file);
                 printf("Type: %s\n", get_track_entry_type_description(track_type));
                 MATROSKA_SWITCH_BREAK(code, code_len);
             case MATROSKA_SEGMENT_TRACK_FLAG_ENABLED:
@@ -581,7 +581,7 @@ void parse_segment_track_entry(FILE* file) {
         }
     }
 
-    if (track_type == MATROSKA_TRACK_TYPE_CODE_SUBTITLE) {
+    if (track_type == MATROSKA_TRACK_TYPE_SUBTITLE) {
         int index = 0;
         while (sub_tracks[index] != NULL)
             index++;

@@ -110,8 +110,18 @@
 
 /* Other defines */
 #define MATROSKA_MAX_ID_LENGTH 4
-#define MATROSKA_TRACK_TYPE_CODE_SUBTITLE 0x11
 #define MATROSKA_MAX_TRACKS 128
+
+/* Track types */
+enum matroska_track_entry_type {
+    MATROSKA_TRACK_TYPE_VIDEO = 1,
+    MATROSKA_TRACK_TYPE_AUDIO = 2,
+    MATROSKA_TRACK_TYPE_COMPLEX = 3,
+    MATROSKA_TRACK_TYPE_LOGO = 0x10,
+    MATROSKA_TRACK_TYPE_SUBTITLE = 0x11,
+    MATROSKA_TRACK_TYPE_BUTTONS = 0x12,
+    MATROSKA_TRACK_TYPE_CONTROL = 0x20,
+};
 
 /* Messages */
 #define MATROSKA_INFO "Matroska parser info: "
@@ -155,7 +165,7 @@ ebml_int read_vint_block_int(FILE* file);
 ebml_byte* read_vint_block_string(FILE* file);
 void read_vint_block_skip(FILE* file);
 
-char* get_track_entry_type_description(ebml_int type);
+char* get_track_entry_type_description(enum matroska_track_entry_type type);
 
 void parse_ebml(FILE* file);
 void parse_segment_info(FILE* file);
