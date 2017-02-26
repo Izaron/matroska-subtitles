@@ -153,21 +153,17 @@ struct ebml_sub_track {
     struct ebml_sub_sentence** sentences;
 };
 
-/* Functions */
+/* Bytestream and parser functions */
 void skip_bytes(FILE* file, matroska_int n);
 void set_bytes(FILE* file, matroska_int n);
 matroska_int get_current_byte(FILE* file);
 matroska_byte* read_bytes(FILE* file, matroska_int n);
 matroska_byte read_byte(FILE* file);
-
 matroska_int read_vint_length(FILE* file);
 matroska_byte* read_vint_block(FILE* file);
 matroska_int read_vint_block_int(FILE* file);
 matroska_byte* read_vint_block_string(FILE* file);
 void read_vint_block_skip(FILE* file);
-
-char* get_track_entry_type_description(enum matroska_track_entry_type type);
-
 void parse_ebml(FILE* file);
 void parse_segment_info(FILE* file);
 struct ebml_sub_sentence* parse_segment_cluster_block_group_block(FILE* file, matroska_int cluster_timecode);
@@ -177,5 +173,12 @@ void parse_segment_track_entry(FILE* file);
 void parse_segment_tracks(FILE* file);
 void parse_segment(FILE* file);
 void parse(FILE* file);
+
+/* Writing and helper functions */
+char* get_track_entry_type_description(enum matroska_track_entry_type type);
+int find_sub_track_index(matroska_int track_number);
+char* generate_filename_from_track(struct ebml_sub_track* track);
+void save_sub_track(struct ebml_sub_track* track);
+void save_all_sub_tracks();
 
 #endif //EBML_PARSER_H
