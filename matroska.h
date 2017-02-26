@@ -112,7 +112,7 @@
 #define MATROSKA_MAX_ID_LENGTH 4
 #define MATROSKA_MAX_TRACKS 128
 
-/* Track types */
+/* Enums */
 enum matroska_track_entry_type {
     MATROSKA_TRACK_TYPE_VIDEO = 1,
     MATROSKA_TRACK_TYPE_AUDIO = 2,
@@ -121,6 +121,28 @@ enum matroska_track_entry_type {
     MATROSKA_TRACK_TYPE_SUBTITLE = 0x11,
     MATROSKA_TRACK_TYPE_BUTTONS = 0x12,
     MATROSKA_TRACK_TYPE_CONTROL = 0x20,
+};
+
+enum matroska_track_subtitle_codec_id {
+    MATROSKA_TRACK_SUBTITLE_CODEC_ID_UTF8,
+    MATROSKA_TRACK_SUBTITLE_CODEC_ID_SSA,
+    MATROSKA_TRACK_SUBTITLE_CODEC_ID_ASS,
+    MATROSKA_TRACK_SUBTITLE_CODEC_ID_USF,
+    MATROSKA_TRACK_SUBTITLE_CODEC_ID_WEBVTT,
+    MATROSKA_TRACK_SUBTITLE_CODEC_ID_BITMAP,
+    MATROSKA_TRACK_SUBTITLE_CODEC_ID_VOBSUB,
+    MATROSKA_TRACK_SUBTITLE_CODEC_ID_KATE
+};
+
+char* matroska_track_text_subtitle_id_strings[] = {
+    "S_TEXT/UTF8",
+    "S_TEXT/SSA",
+    "S_TEXT/ASS",
+    "S_TEXT/USF",
+    "S_TEXT/WEBVTT",
+    "S_IMAGE/BMP",
+    "S_VOBSUB",
+    "S_KATE"
 };
 
 /* Messages */
@@ -144,10 +166,11 @@ struct matroska_sub_sentence {
 };
 
 struct matroska_sub_track {
-    matroska_int track_number;
+    char* header;   // Style header for ASS/SSA (and other) subtitles
     char* lang;
+    matroska_int track_number;
     matroska_int lang_index;
-    char* header;
+    enum matroska_track_subtitle_codec_id codec_id;
 
     int sentence_count;
     struct matroska_sub_sentence** sentences;

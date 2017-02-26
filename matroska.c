@@ -423,6 +423,13 @@ char* get_track_entry_type_description(enum matroska_track_entry_type type) {
     }
 }
 
+enum matroska_track_subtitle_codec_id get_track_subtitle_codec_id(char* codec_id) {
+    for (int i = MATROSKA_TRACK_SUBTITLE_CODEC_ID_UTF8; i <= MATROSKA_TRACK_SUBTITLE_CODEC_ID_KATE; i++)
+        if (strcmp(codec_id, matroska_track_text_subtitle_id_strings[i]) == 0)
+            return (enum matroska_track_subtitle_codec_id) i;
+    return (enum matroska_track_subtitle_codec_id) 0;
+}
+
 void parse_segment_track_entry(FILE* file) {
     printf("\n==== Track entry ====\n");
 
@@ -433,6 +440,8 @@ void parse_segment_track_entry(FILE* file) {
     enum matroska_track_entry_type track_type = MATROSKA_TRACK_TYPE_VIDEO;
     char* lang = strdup("eng");
     char* header = NULL;
+    char* codec_id_string = NULL;
+    enum matroska_track_subtitle_codec_id codec_id = MATROSKA_TRACK_SUBTITLE_CODEC_ID_UTF8;
 
     int code = 0, code_len = 0;
     while (pos + len > get_current_byte(file)) {
@@ -487,7 +496,10 @@ void parse_segment_track_entry(FILE* file) {
                 printf("Language: %s\n", lang);
                 MATROSKA_SWITCH_BREAK(code, code_len);
             case MATROSKA_SEGMENT_TRACK_CODEC_ID:
-                printf("Codec ID: %s\n", read_vint_block_string(file));
+                codec_id_string = read_vint_block_string(file);
+                codec_id = get_track_subtitle_codec_id(codec_id_string);
+                printf("Codec ID: %s\n", codec_id_string);
+                free(codec_id_string);
                 MATROSKA_SWITCH_BREAK(code, code_len);
             case MATROSKA_SEGMENT_TRACK_CODEC_PRIVATE:
                 if (track_type == MATROSKA_TRACK_TYPE_SUBTITLE) {
@@ -579,10 +591,11 @@ void parse_segment_track_entry(FILE* file) {
 
     if (track_type == MATROSKA_TRACK_TYPE_SUBTITLE) {
         struct matroska_sub_track* sub_track = malloc(sizeof(struct matroska_sub_track));
-        sub_track->track_number = track_number;
-        sub_track->lang = lang;
-        sub_track->lang_index = 0;
         sub_track->header = header;
+        sub_track->lang = lang;
+        sub_track->track_number = track_number;
+        sub_track->lang_index = 0;
+        sub_track->codec_id = codec_id;
         sub_track->sentence_count = 0;
 
         for (int i = 0; i < mkv_ctx->sub_tracks_count; i++)
