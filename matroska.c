@@ -8,6 +8,7 @@
 #include "matroska.h"
 
 struct ebml_sub_track* sub_tracks[MATROSKA_MAX_TRACKS];
+char* filename;
 
 void skip_bytes(FILE* file, matroska_int n) {
     fseek(file, n, SEEK_CUR);
@@ -498,7 +499,6 @@ void parse_segment_track_entry(FILE* file) {
                 printf("Codec ID: %s\n", read_vint_block_string(file));
                 MATROSKA_SWITCH_BREAK(code, code_len);
             case MATROSKA_SEGMENT_TRACK_CODEC_PRIVATE:
-                // WARNING - this string can contain headers for some formats of subtitles!
                 if (track_type == MATROSKA_TRACK_TYPE_SUBTITLE) {
                     header = read_vint_block_string(file);
                 } else {
@@ -695,9 +695,22 @@ void parse_segment(FILE* file) {
     }
 }
 
+char* generate_filename_from_track(struct ebml_sub_track* track) {
+    char* buf = malloc(sizeof(char) * 200);
+    if (track->lang_index == 0)
+        sprintf(buf, "%s_%s.srt", filename, track->lang);
+    else
+        sprintf(buf, "%s_%s_%ld.srt", filename, track->lang, track->lang_index);
+    write(1, buf, strlen(buf));
+    write(1, "\n", 1);
+    return buf;
+}
+
 void save_sub_track(struct ebml_sub_track* track) {
+    int desc = open(generate_filename_from_track(track), O_WRONLY | O_CREAT | O_TRUNC | O_APPEND, S_IWUSR | S_IRUSR);
+
     if (track->header != NULL)
-        write(1, track->header, strlen(track->header));
+        write(desc, track->header, strlen(track->header));
 
     for (int i = 0; i < track->sentence_count; i++) {
         struct ebml_sub_sentence* sentence = track->sentences[i];
@@ -711,19 +724,15 @@ void save_sub_track(struct ebml_sub_track* track) {
             time_end = MIN(time_end, track->sentences[i + 1]->time_start - 1);
         char* timestamp_end = generate_timestamp(time_end);
 
-        write(1, number, strlen(number));
-        write(1, "\n", 1);
-        write(1, timestamp_start, strlen(timestamp_start));
-        write(1, " --> ", 5);
-        write(1, timestamp_end, strlen(timestamp_start));
-        write(1, "\n", 1);
-        write(1, sentence->text, sentence->text_size);
-        write(1, "\n\n", 2);
+        write(desc, number, strlen(number));
+        write(desc, "\n", 1);
+        write(desc, timestamp_start, strlen(timestamp_start));
+        write(desc, " --> ", 5);
+        write(desc, timestamp_end, strlen(timestamp_start));
+        write(desc, "\n", 1);
+        write(desc, sentence->text, sentence->text_size);
+        write(desc, "\n\n", 2);
     }
-
-    write(1, "\n\n\n\n\n\n\n\n\n\n", 10);
-    write(1, "============================================================\n", 31);
-    write(1, "\n\n\n\n\n\n\n\n\n\n", 10);
 }
 
 void save_all_sub_tracks() {
@@ -779,6 +788,7 @@ int main(int argc, char** argv) {
     for (int i = 1; i < argc; i++) {
         printf("======================= New video file: %s =======================\n", argv[i]);
         FILE *file;
+        filename = argv[i];
         file = fopen(argv[i], "r");
         parse(file);
         printf("\n\n\n\n");
