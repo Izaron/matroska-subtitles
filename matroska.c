@@ -5,9 +5,9 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <string.h>
-#include "ebml.h"
+#include "matroska.h"
 
-struct ebml_sub_track* sub_tracks[EBML_MAX_TRACKS];
+struct ebml_sub_track* sub_tracks[MATROSKA_MAX_TRACKS];
 
 void skip_bytes(FILE* file, ebml_int n) {
     fseek(file, n, SEEK_CUR);
@@ -90,39 +90,39 @@ void parse_ebml(FILE* file) {
 
         switch (code) {
             /* EBML ids */
-            case EBML_EBML_VERSION:
+            case MATROSKA_EBML_VERSION:
                 read_vint_block_int(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_EBML_READ_VERSION:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_EBML_READ_VERSION:
                 read_vint_block_int(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_EBML_MAX_ID_LENGTH:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_EBML_MAX_ID_LENGTH:
                 read_vint_block_int(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_EBML_MAX_SIZE_LENGTH:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_EBML_MAX_SIZE_LENGTH:
                 read_vint_block_int(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_EBML_DOC_TYPE:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_EBML_DOC_TYPE:
                 printf("Document type: %s\n", read_vint_block_string(file));
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_EBML_DOC_TYPE_VERSION:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_EBML_DOC_TYPE_VERSION:
                 read_vint_block_int(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_EBML_DOC_TYPE_READ_VERSION:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_EBML_DOC_TYPE_READ_VERSION:
                 read_vint_block_int(file);
-                EBML_SWITCH_BREAK(code, code_len);
+                MATROSKA_SWITCH_BREAK(code, code_len);
 
             /* Misc ids */
-            case EBML_VOID:
+            case MATROSKA_VOID:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_CRC32:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_CRC32:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
+                MATROSKA_SWITCH_BREAK(code, code_len);
             default:
-                if (code_len == EBML_MAX_ID_LENGTH) {
-                    printf (EBML_ERROR "Unknown element 0x%x at position %ld, skipping EBML block\n", code,
-                            get_current_byte(file) - EBML_MAX_ID_LENGTH);
+                if (code_len == MATROSKA_MAX_ID_LENGTH) {
+                    printf (MATROSKA_ERROR "Unknown element 0x%x at position %ld, skipping EBML block\n", code,
+                            get_current_byte(file) - MATROSKA_MAX_ID_LENGTH);
                     set_bytes(file, pos + len);
                     return;
                 }
@@ -143,60 +143,60 @@ void parse_segment_info(FILE* file) {
 
         switch (code) {
             /* Segment info ids */
-            case EBML_SEGMENT_INFO_SEGMENT_UID:
+            case MATROSKA_SEGMENT_INFO_SEGMENT_UID:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_INFO_SEGMENT_FILENAME:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_INFO_SEGMENT_FILENAME:
                 printf("Filename: %s\n", read_vint_block_string(file));
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_INFO_PREV_UID:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_INFO_PREV_UID:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_INFO_PREV_FILENAME:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_INFO_PREV_FILENAME:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_INFO_NEXT_UID:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_INFO_NEXT_UID:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_INFO_NEXT_FILENAME:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_INFO_NEXT_FILENAME:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_INFO_SEGMENT_FAMILY:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_INFO_SEGMENT_FAMILY:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_INFO_CHAPTER_TRANSLATE:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_INFO_CHAPTER_TRANSLATE:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_INFO_TIMECODE_SCALE:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_INFO_TIMECODE_SCALE:
                 printf("Timecode scale: %ld\n", read_vint_block_int(file));
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_INFO_DURATION:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_INFO_DURATION:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_INFO_DATE_UTC:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_INFO_DATE_UTC:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_INFO_TITLE:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_INFO_TITLE:
                 printf("Title: %s\n", read_vint_block_string(file));
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_MUXING_APP:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_MUXING_APP:
                 printf("Muxing app: %s\n", read_vint_block_string(file));
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_WRITING_APP:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_WRITING_APP:
                 printf("Writing app: %s\n", read_vint_block_string(file));
-                EBML_SWITCH_BREAK(code, code_len);
+                MATROSKA_SWITCH_BREAK(code, code_len);
 
             /* Misc ids */
-            case EBML_VOID:
+            case MATROSKA_VOID:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_CRC32:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_CRC32:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
+                MATROSKA_SWITCH_BREAK(code, code_len);
             default:
-                if (code_len == EBML_MAX_ID_LENGTH) {
-                    printf (EBML_ERROR "Unknown element 0x%x at position %ld, skipping segment info block\n", code,
-                            get_current_byte(file) - EBML_MAX_ID_LENGTH);
+                if (code_len == MATROSKA_MAX_ID_LENGTH) {
+                    printf (MATROSKA_ERROR "Unknown element 0x%x at position %ld, skipping segment info block\n", code,
+                            get_current_byte(file) - MATROSKA_MAX_ID_LENGTH);
                     set_bytes(file, pos + len);
                     return;
                 }
@@ -290,53 +290,53 @@ void parse_segment_cluster_block_group(FILE* file, ebml_int cluster_timecode) {
 
         switch (code) {
             /* Segment cluster block group ids */
-            case EBML_SEGMENT_CLUSTER_BLOCK_GROUP_BLOCK:
+            case MATROSKA_SEGMENT_CLUSTER_BLOCK_GROUP_BLOCK:
                 new_sentence = parse_segment_cluster_block_group_block(file, cluster_timecode);
                 if (new_sentence != NULL) {
                     sentence_list = realloc(sentence_list, sizeof(struct ebml_sub_track*) * (sentence_count + 1));
                     sentence_list[sentence_count] = new_sentence;
                     sentence_count++;
                 }
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_CLUSTER_BLOCK_GROUP_BLOCK_VIRTUAL:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_CLUSTER_BLOCK_GROUP_BLOCK_VIRTUAL:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_CLUSTER_BLOCK_GROUP_BLOCK_ADDITIONS:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_CLUSTER_BLOCK_GROUP_BLOCK_ADDITIONS:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_CLUSTER_BLOCK_GROUP_BLOCK_DURATION:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_CLUSTER_BLOCK_GROUP_BLOCK_DURATION:
                 block_duration = read_vint_block_int(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_CLUSTER_BLOCK_GROUP_REFERENCE_PRIORITY:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_CLUSTER_BLOCK_GROUP_REFERENCE_PRIORITY:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_CLUSTER_BLOCK_GROUP_REFERENCE_BLOCK:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_CLUSTER_BLOCK_GROUP_REFERENCE_BLOCK:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_CLUSTER_BLOCK_GROUP_CODEC_STATE:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_CLUSTER_BLOCK_GROUP_CODEC_STATE:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_CLUSTER_BLOCK_GROUP_DISCARD_PADDING:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_CLUSTER_BLOCK_GROUP_DISCARD_PADDING:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_CLUSTER_BLOCK_GROUP_SLICES:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_CLUSTER_BLOCK_GROUP_SLICES:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_CLUSTER_BLOCK_GROUP_REFERENCE_FRAME:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_CLUSTER_BLOCK_GROUP_REFERENCE_FRAME:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
+                MATROSKA_SWITCH_BREAK(code, code_len);
 
             /* Misc ids */
-            case EBML_VOID:
+            case MATROSKA_VOID:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_CRC32:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_CRC32:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
+                MATROSKA_SWITCH_BREAK(code, code_len);
             default:
-                if (code_len == EBML_MAX_ID_LENGTH) {
-                    printf (EBML_ERROR "Unknown element 0x%x at position %ld, skipping segment cluster block group\n", code,
-                            get_current_byte(file) - EBML_MAX_ID_LENGTH);
+                if (code_len == MATROSKA_MAX_ID_LENGTH) {
+                    printf (MATROSKA_ERROR "Unknown element 0x%x at position %ld, skipping segment cluster block group\n", code,
+                            get_current_byte(file) - MATROSKA_MAX_ID_LENGTH);
                     set_bytes(file, pos + len);
                     return;
                 }
@@ -368,40 +368,40 @@ void parse_segment_cluster(FILE* file) {
 
         switch (code) {
             /* Segment cluster ids */
-            case EBML_SEGMENT_CLUSTER_TIMECODE:
+            case MATROSKA_SEGMENT_CLUSTER_TIMECODE:
                 timecode = read_vint_block_int(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_CLUSTER_SILENT_TRACKS:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_CLUSTER_SILENT_TRACKS:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_CLUSTER_POSITION:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_CLUSTER_POSITION:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_CLUSTER_PREV_SIZE:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_CLUSTER_PREV_SIZE:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_CLUSTER_SIMPLE_BLOCK:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_CLUSTER_SIMPLE_BLOCK:
                 // Same as Block inside the Block Group, but we can't save subs in this structure
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_CLUSTER_BLOCK_GROUP:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_CLUSTER_BLOCK_GROUP:
                 parse_segment_cluster_block_group(file, timecode);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_CLUSTER_ENCRYPTED_BLOCK:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_CLUSTER_ENCRYPTED_BLOCK:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
+                MATROSKA_SWITCH_BREAK(code, code_len);
 
             /* Misc ids */
-            case EBML_VOID:
+            case MATROSKA_VOID:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_CRC32:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_CRC32:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
+                MATROSKA_SWITCH_BREAK(code, code_len);
             default:
-                if (code_len == EBML_MAX_ID_LENGTH) {
-                    printf (EBML_ERROR "Unknown element 0x%x at position %ld, skipping segment cluster block\n", code,
-                            get_current_byte(file) - EBML_MAX_ID_LENGTH);
+                if (code_len == MATROSKA_MAX_ID_LENGTH) {
+                    printf (MATROSKA_ERROR "Unknown element 0x%x at position %ld, skipping segment cluster block\n", code,
+                            get_current_byte(file) - MATROSKA_MAX_ID_LENGTH);
                     set_bytes(file, pos + len);
                     return;
                 }
@@ -449,131 +449,131 @@ void parse_segment_track_entry(FILE* file) {
 
         switch (code) {
             /* Track entry ids*/
-            case EBML_SEGMENT_TRACK_TRACK_NUMBER:
+            case MATROSKA_SEGMENT_TRACK_TRACK_NUMBER:
                 track_number = read_vint_block_int(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_TRACK_UID:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_TRACK_UID:
                 printf("UID: %lu\n", read_vint_block_int(file));
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_TRACK_TYPE:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_TRACK_TYPE:
                 track_type = read_vint_block_int(file);
                 printf("Type: %s\n", get_track_entry_type_description(track_type));
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_FLAG_ENABLED:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_FLAG_ENABLED:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_FLAG_DEFAULT:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_FLAG_DEFAULT:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_FLAG_FORCED:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_FLAG_FORCED:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_FLAG_LACING:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_FLAG_LACING:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_MIN_CACHE:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_MIN_CACHE:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_MAX_CACHE:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_MAX_CACHE:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_DEFAULT_DURATION:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_DEFAULT_DURATION:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_DEFAULT_DECODED_FIELD_DURATION:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_DEFAULT_DECODED_FIELD_DURATION:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_MAX_BLOCK_ADDITION_ID:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_MAX_BLOCK_ADDITION_ID:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_NAME:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_NAME:
                 printf("Name: %s\n", read_vint_block_string(file));
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_LANGUAGE:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_LANGUAGE:
                 lang = read_vint_block_string(file);
                 printf("Language: %s\n", lang);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_CODEC_ID:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_CODEC_ID:
                 printf("Codec ID: %s\n", read_vint_block_string(file));
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_CODEC_PRIVATE:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_CODEC_PRIVATE:
                 // WARNING - this string can contain headers for some formats of subtitles!
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_CODEC_NAME:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_CODEC_NAME:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_CODEC_ATTACHMENT_LINK:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_CODEC_ATTACHMENT_LINK:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_CODEC_DECODE_ALL:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_CODEC_DECODE_ALL:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_TRACK_OVERLAY:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_TRACK_OVERLAY:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_CODEC_DELAY:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_CODEC_DELAY:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_SEEK_PRE_ROLL:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_SEEK_PRE_ROLL:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_TRACK_TRANSLATE:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_TRACK_TRANSLATE:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_VIDEO:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_VIDEO:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_AUDIO:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_AUDIO:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_TRACK_OPERATION:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_TRACK_OPERATION:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_CONTENT_ENCODINGS:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_CONTENT_ENCODINGS:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
+                MATROSKA_SWITCH_BREAK(code, code_len);
 
             /* Deprecated IDs */
-            case EBML_SEGMENT_TRACK_TRACK_TIMECODE_SCALE:
-                printf(EBML_WARNING "Deprecated element 0x%x at position %ld\n", code,
+            case MATROSKA_SEGMENT_TRACK_TRACK_TIMECODE_SCALE:
+                printf(MATROSKA_WARNING "Deprecated element 0x%x at position %ld\n", code,
                        get_current_byte(file) - 3); // minus length of the ID
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_TRACK_OFFSET:
-                printf(EBML_WARNING "Deprecated element 0x%x at position %ld\n", code,
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_TRACK_OFFSET:
+                printf(MATROSKA_WARNING "Deprecated element 0x%x at position %ld\n", code,
                        get_current_byte(file) - 2); // minus length of the ID
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
+                MATROSKA_SWITCH_BREAK(code, code_len);
 
             /* DivX trick track extenstions */
-            case EBML_SEGMENT_TRACK_TRICK_TRACK_UID:
+            case MATROSKA_SEGMENT_TRACK_TRICK_TRACK_UID:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_TRICK_TRACK_SEGMENT_UID:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_TRICK_TRACK_SEGMENT_UID:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_TRICK_TRACK_FLAG:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_TRICK_TRACK_FLAG:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_TRICK_MASTER_TRACK_UID:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_TRICK_MASTER_TRACK_UID:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACK_TRICK_MASTER_TRACK_SEGMENT_UID:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACK_TRICK_MASTER_TRACK_SEGMENT_UID:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
+                MATROSKA_SWITCH_BREAK(code, code_len);
 
             /* Misc ids */
-            case EBML_VOID:
+            case MATROSKA_VOID:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_CRC32:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_CRC32:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
+                MATROSKA_SWITCH_BREAK(code, code_len);
             default:
-                if (code_len == EBML_MAX_ID_LENGTH) {
-                    printf(EBML_ERROR "Unknown element 0x%x at position %ld, skipping segment track entry block\n", code,
-                           get_current_byte(file) - EBML_MAX_ID_LENGTH);
+                if (code_len == MATROSKA_MAX_ID_LENGTH) {
+                    printf(MATROSKA_ERROR "Unknown element 0x%x at position %ld, skipping segment track entry block\n", code,
+                           get_current_byte(file) - MATROSKA_MAX_ID_LENGTH);
                     set_bytes(file, pos + len);
                     return;
                 }
@@ -581,7 +581,7 @@ void parse_segment_track_entry(FILE* file) {
         }
     }
 
-    if (track_type == EBML_TRACK_TYPE_CODE_SUBTITLE) {
+    if (track_type == MATROSKA_TRACK_TYPE_CODE_SUBTITLE) {
         int index = 0;
         while (sub_tracks[index] != NULL)
             index++;
@@ -608,21 +608,21 @@ void parse_segment_tracks(FILE* file) {
 
         switch (code) {
             /* Tracks ids*/
-            case EBML_SEGMENT_TRACK_ENTRY:
+            case MATROSKA_SEGMENT_TRACK_ENTRY:
                 parse_segment_track_entry(file);
-                EBML_SWITCH_BREAK(code, code_len);
+                MATROSKA_SWITCH_BREAK(code, code_len);
 
             /* Misc ids */
-            case EBML_VOID:
+            case MATROSKA_VOID:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_CRC32:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_CRC32:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
+                MATROSKA_SWITCH_BREAK(code, code_len);
             default:
-                if (code_len == EBML_MAX_ID_LENGTH) {
-                    printf(EBML_ERROR "Unknown element 0x%x at position %ld, skipping segment tracks block\n", code,
-                           get_current_byte(file) - EBML_MAX_ID_LENGTH);
+                if (code_len == MATROSKA_MAX_ID_LENGTH) {
+                    printf(MATROSKA_ERROR "Unknown element 0x%x at position %ld, skipping segment tracks block\n", code,
+                           get_current_byte(file) - MATROSKA_MAX_ID_LENGTH);
                     set_bytes(file, pos + len);
                     return;
                 }
@@ -643,43 +643,43 @@ void parse_segment(FILE* file) {
 
         switch (code) {
             /* Segment ids */
-            case EBML_SEGMENT_SEEK_HEAD:
+            case MATROSKA_SEGMENT_SEEK_HEAD:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_INFO:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_INFO:
                 parse_segment_info(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_CLUSTER:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_CLUSTER:
                 //read_vint_block_skip(file);
                 parse_segment_cluster(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TRACKS:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TRACKS:
                 parse_segment_tracks(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_CUES:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_CUES:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_ATTACHMENTS:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_ATTACHMENTS:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_CHAPTERS:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_CHAPTERS:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_TAGS:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_TAGS:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
+                MATROSKA_SWITCH_BREAK(code, code_len);
 
             /* Misc ids */
-            case EBML_VOID:
+            case MATROSKA_VOID:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_CRC32:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_CRC32:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
+                MATROSKA_SWITCH_BREAK(code, code_len);
             default:
-                if (code_len == EBML_MAX_ID_LENGTH) {
-                    printf (EBML_ERROR "Unknown element 0x%x at position %ld, skipping segment block\n", code,
-                            get_current_byte(file) - EBML_MAX_ID_LENGTH);
+                if (code_len == MATROSKA_MAX_ID_LENGTH) {
+                    printf (MATROSKA_ERROR "Unknown element 0x%x at position %ld, skipping segment block\n", code,
+                            get_current_byte(file) - MATROSKA_MAX_ID_LENGTH);
                     set_bytes(file, pos + len);
                     return;
                 }
@@ -727,7 +727,7 @@ void save_all_sub_tracks() {
 void parse(FILE* file) {
     int code = 0, code_len = 0;
     if (file == NULL) {
-        printf(EBML_ERROR "can't open file. Is it exists?");
+        printf(MATROSKA_ERROR "can't open file. Is it exists?");
         return;
     }
     while (!feof(file)) {
@@ -737,24 +737,24 @@ void parse(FILE* file) {
 
         switch (code) {
             /* Header ids*/
-            case EBML_EBML_HEADER:
+            case MATROSKA_EBML_HEADER:
                 parse_ebml(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_SEGMENT_HEADER:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_SEGMENT_HEADER:
                 parse_segment(file);
-                EBML_SWITCH_BREAK(code, code_len);
+                MATROSKA_SWITCH_BREAK(code, code_len);
 
             /* Misc ids */
-            case EBML_VOID:
+            case MATROSKA_VOID:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
-            case EBML_CRC32:
+                MATROSKA_SWITCH_BREAK(code, code_len);
+            case MATROSKA_CRC32:
                 read_vint_block_skip(file);
-                EBML_SWITCH_BREAK(code, code_len);
+                MATROSKA_SWITCH_BREAK(code, code_len);
             default:
-                if (code_len == EBML_MAX_ID_LENGTH) {
-                    printf (EBML_ERROR "Unknown element 0x%x at position %ld, skipping file parsing\n", code,
-                            get_current_byte(file) - EBML_MAX_ID_LENGTH);
+                if (code_len == MATROSKA_MAX_ID_LENGTH) {
+                    printf (MATROSKA_ERROR "Unknown element 0x%x at position %ld, skipping file parsing\n", code,
+                            get_current_byte(file) - MATROSKA_MAX_ID_LENGTH);
                     return;
                 }
                 break;
