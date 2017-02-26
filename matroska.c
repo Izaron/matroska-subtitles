@@ -9,32 +9,32 @@
 
 struct ebml_sub_track* sub_tracks[MATROSKA_MAX_TRACKS];
 
-void skip_bytes(FILE* file, ebml_int n) {
+void skip_bytes(FILE* file, matroska_int n) {
     fseek(file, n, SEEK_CUR);
 }
 
-void set_bytes(FILE* file, ebml_int n) {
+void set_bytes(FILE* file, matroska_int n) {
     fseek(file, n, SEEK_SET);
 }
 
-ebml_int get_current_byte(FILE* file) {
-    return (ebml_int) ftell(file);
+matroska_int get_current_byte(FILE* file) {
+    return (matroska_int) ftell(file);
 }
 
-ebml_byte* read_bytes(FILE* file, ebml_int n) {
-    ebml_byte* buffer = malloc(sizeof(ebml_byte) * n);
+matroska_byte* read_bytes(FILE* file, matroska_int n) {
+    matroska_byte* buffer = malloc(sizeof(matroska_byte) * n);
     fread(buffer, 1, n, file);
     return buffer;
 }
 
-ebml_byte read_byte(FILE* file) {
-    ebml_byte ch;
+matroska_byte read_byte(FILE* file) {
+    matroska_byte ch;
     fread(&ch, 1, 1, file);
     return ch;
 }
 
-ebml_int read_vint_length(FILE* file) {
-    ebml_byte ch = read_byte(file);
+matroska_int read_vint_length(FILE* file) {
+    matroska_byte ch = read_byte(file);
     int cnt = 1;
     for (int i = 7; i >= 0; i--) {
         if ((ch & (1 << i)) != 0) {
@@ -43,7 +43,7 @@ ebml_int read_vint_length(FILE* file) {
         } else
             cnt++;
     }
-    ebml_int ret = ch;
+    matroska_int ret = ch;
     for (int i = 1; i < cnt; i++) {
         ret <<= 8;
         ret += read_byte(file);
@@ -51,16 +51,16 @@ ebml_int read_vint_length(FILE* file) {
     return ret;
 }
 
-ebml_byte* read_vint_block(FILE* file) {
-    ebml_int len = read_vint_length(file);
+matroska_byte* read_vint_block(FILE* file) {
+    matroska_int len = read_vint_length(file);
     return read_bytes(file, len);
 }
 
-ebml_int read_vint_block_int(FILE* file) {
-    ebml_int len = read_vint_length(file);
-    ebml_byte* s = read_bytes(file, len);
+matroska_int read_vint_block_int(FILE* file) {
+    matroska_int len = read_vint_length(file);
+    matroska_byte* s = read_bytes(file, len);
 
-    ebml_int res = 0;
+    matroska_int res = 0;
     for (int i = 0; i < len; i++) {
         res <<= 8;
         res += s[i];
@@ -69,18 +69,18 @@ ebml_int read_vint_block_int(FILE* file) {
     return res;
 }
 
-ebml_byte* read_vint_block_string(FILE* file) {
+matroska_byte* read_vint_block_string(FILE* file) {
     return read_vint_block(file);
 }
 
 void read_vint_block_skip(FILE* file) {
-    ebml_int len = read_vint_length(file);
+    matroska_int len = read_vint_length(file);
     skip_bytes(file, len);
 }
 
 void parse_ebml(FILE* file) {
-    ebml_int len = read_vint_length(file);
-    ebml_int pos = get_current_byte(file);
+    matroska_int len = read_vint_length(file);
+    matroska_int pos = get_current_byte(file);
 
     int code = 0, code_len = 0;
     while (pos + len > get_current_byte(file)) {
@@ -132,8 +132,8 @@ void parse_ebml(FILE* file) {
 }
 
 void parse_segment_info(FILE* file) {
-    ebml_int len = read_vint_length(file);
-    ebml_int pos = get_current_byte(file);
+    matroska_int len = read_vint_length(file);
+    matroska_int pos = get_current_byte(file);
 
     int code = 0, code_len = 0;
     while (pos + len > get_current_byte(file)) {
@@ -205,21 +205,21 @@ void parse_segment_info(FILE* file) {
     }
 }
 
-char* generate_timestamp(ebml_int milliseconds) {
-    ebml_int millis = milliseconds % 1000;
+char* generate_timestamp(matroska_int milliseconds) {
+    matroska_int millis = milliseconds % 1000;
     milliseconds /= 1000;
-    ebml_int seconds = milliseconds % 60;
+    matroska_int seconds = milliseconds % 60;
     milliseconds /= 60;
-    ebml_int minutes = milliseconds % 60;
+    matroska_int minutes = milliseconds % 60;
     milliseconds /= 60;
-    ebml_int hours = milliseconds;
+    matroska_int hours = milliseconds;
 
     char* buf = malloc(sizeof(char) * 15);
     sprintf(buf, "%02ld:%02ld:%02ld,%03ld", hours, minutes, seconds, millis);
     return buf;
 }
 
-int find_sub_track_index(ebml_int track_number) {
+int find_sub_track_index(matroska_int track_number) {
     int index = 0;
     while (sub_tracks[index] != NULL) {
         if (sub_tracks[index]->track_number == track_number)
@@ -229,10 +229,10 @@ int find_sub_track_index(ebml_int track_number) {
     return -1;
 }
 
-struct ebml_sub_sentence* parse_segment_cluster_block_group_block(FILE* file, ebml_int cluster_timecode) {
-    ebml_int len = read_vint_length(file);
-    ebml_int pos = get_current_byte(file);
-    ebml_int track_number = read_vint_length(file);     // track number is length, not int
+struct ebml_sub_sentence* parse_segment_cluster_block_group_block(FILE* file, matroska_int cluster_timecode) {
+    matroska_int len = read_vint_length(file);
+    matroska_int pos = get_current_byte(file);
+    matroska_int track_number = read_vint_length(file);     // track number is length, not int
 
     int sub_track_index = find_sub_track_index(track_number);
     if (sub_track_index == -1) {
@@ -240,13 +240,13 @@ struct ebml_sub_sentence* parse_segment_cluster_block_group_block(FILE* file, eb
         return NULL;
     }
 
-    ebml_int timecode = read_byte(file);
+    matroska_int timecode = read_byte(file);
     timecode <<= 8; timecode += read_byte(file);
 
     read_byte(file);    // skip one byte
 
-    ebml_int size = pos + len - get_current_byte(file);
-    ebml_byte * message = read_bytes(file, size);
+    matroska_int size = pos + len - get_current_byte(file);
+    matroska_byte * message = read_bytes(file, size);
 
     struct ebml_sub_sentence* sentence = malloc(sizeof(struct ebml_sub_sentence));
     sentence->text = message;
@@ -273,11 +273,11 @@ struct ebml_sub_sentence* parse_segment_cluster_block_group_block(FILE* file, eb
     return sentence;
 }
 
-void parse_segment_cluster_block_group(FILE* file, ebml_int cluster_timecode) {
-    ebml_int len = read_vint_length(file);
-    ebml_int pos = get_current_byte(file);
+void parse_segment_cluster_block_group(FILE* file, matroska_int cluster_timecode) {
+    matroska_int len = read_vint_length(file);
+    matroska_int pos = get_current_byte(file);
 
-    ebml_int block_duration = ULONG_MAX;
+    matroska_int block_duration = ULONG_MAX;
     struct ebml_sub_sentence* new_sentence;
     struct ebml_sub_sentence** sentence_list = NULL;
     int sentence_count = 0;
@@ -355,10 +355,10 @@ void parse_segment_cluster_block_group(FILE* file, ebml_int cluster_timecode) {
 }
 
 void parse_segment_cluster(FILE* file) {
-    ebml_int len = read_vint_length(file);
-    ebml_int pos = get_current_byte(file);
+    matroska_int len = read_vint_length(file);
+    matroska_int pos = get_current_byte(file);
 
-    ebml_int timecode = 0;
+    matroska_int timecode = 0;
 
     int code = 0, code_len = 0;
     while (pos + len > get_current_byte(file)) {
@@ -434,12 +434,12 @@ char* get_track_entry_type_description(enum matroska_track_entry_type type) {
 void parse_segment_track_entry(FILE* file) {
     printf("\n==== Track entry ====\n");
 
-    ebml_int len = read_vint_length(file);
-    ebml_int pos = get_current_byte(file);
+    matroska_int len = read_vint_length(file);
+    matroska_int pos = get_current_byte(file);
 
-    ebml_int track_number = 0;
+    matroska_int track_number = 0;
     enum matroska_track_entry_type track_type = MATROSKA_TRACK_TYPE_SUBTITLE;
-    ebml_byte* lang = (ebml_byte *) "eng";
+    matroska_byte* lang = (matroska_byte *) "eng";
 
     int code = 0, code_len = 0;
     while (pos + len > get_current_byte(file)) {
@@ -597,8 +597,8 @@ void parse_segment_track_entry(FILE* file) {
 }
 
 void parse_segment_tracks(FILE* file) {
-    ebml_int len = read_vint_length(file);
-    ebml_int pos = get_current_byte(file);
+    matroska_int len = read_vint_length(file);
+    matroska_int pos = get_current_byte(file);
 
     int code = 0, code_len = 0;
     while (pos + len > get_current_byte(file)) {
@@ -632,8 +632,8 @@ void parse_segment_tracks(FILE* file) {
 }
 
 void parse_segment(FILE* file) {
-    ebml_int len = read_vint_length(file);
-    ebml_int pos = get_current_byte(file);
+    matroska_int len = read_vint_length(file);
+    matroska_int pos = get_current_byte(file);
 
     int code = 0, code_len = 0;
     while (pos + len > get_current_byte(file)) {
@@ -696,7 +696,7 @@ void save_sub_track(struct ebml_sub_track* track) {
         sprintf(number, "%d", i + 1);
 
         char* timestamp_start = generate_timestamp(sentence->time_start);
-        ebml_int time_end = sentence->time_end;
+        matroska_int time_end = sentence->time_end;
         if (i + 1 < track->sentence_count)
             time_end = MIN(time_end, track->sentences[i + 1]->time_start - 1);
         char* timestamp_end = generate_timestamp(time_end);
