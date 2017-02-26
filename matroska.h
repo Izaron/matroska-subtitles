@@ -151,10 +151,12 @@ struct matroska_sub_track {
 
     int sentence_count;
     struct matroska_sub_sentence** sentences;
-};
+} *pSub_track;
+
+
+struct matroska_sub_track* sub_tracks[MATROSKA_MAX_TRACKS];
 
 struct matroska_ctx {
-    struct matroska_sub_track** sub_tracks;
     int sub_tracks_count;
     char* filename;
 };
