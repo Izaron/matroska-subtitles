@@ -27,6 +27,13 @@ matroska_byte* read_bytes(FILE* file, matroska_int n) {
     return buffer;
 }
 
+char* read_bytes_signed(FILE* file, matroska_int n) {
+    char* buffer = malloc(sizeof(matroska_byte) * (n + 1));
+    fread(buffer, 1, n, file);
+    buffer[n] = 0;
+    return buffer;
+}
+
 matroska_byte read_byte(FILE* file) {
     return (matroska_byte) fgetc(file);
 }
@@ -48,6 +55,11 @@ matroska_byte* read_vint_block(FILE* file) {
     return read_bytes(file, len);
 }
 
+char* read_vint_block_signed(FILE* file) {
+    matroska_int len = read_vint_length(file);
+    return read_bytes_signed(file, len);
+}
+
 matroska_int read_vint_block_int(FILE* file) {
     matroska_int len = read_vint_length(file);
     matroska_byte* s = read_bytes(file, len);
@@ -62,8 +74,8 @@ matroska_int read_vint_block_int(FILE* file) {
     return res;
 }
 
-matroska_byte* read_vint_block_string(FILE* file) {
-    return read_vint_block(file);
+char* read_vint_block_string(FILE* file) {
+    return read_vint_block_signed(file);
 }
 
 void read_vint_block_skip(FILE* file) {
@@ -236,7 +248,7 @@ struct matroska_sub_sentence* parse_segment_cluster_block_group_block(FILE* file
     read_byte(file);    // skip one byte
 
     matroska_int size = pos + len - get_current_byte(file);
-    matroska_byte * message = read_bytes(file, size);
+    char* message = read_bytes_signed(file, size);
 
     struct matroska_sub_sentence* sentence = malloc(sizeof(struct matroska_sub_sentence));
     sentence->text = message;
@@ -419,8 +431,8 @@ void parse_segment_track_entry(FILE* file) {
 
     matroska_int track_number = 0;
     enum matroska_track_entry_type track_type = MATROSKA_TRACK_TYPE_VIDEO;
-    matroska_byte* lang = (matroska_byte *) strdup("eng");
-    matroska_byte* header = NULL;
+    char* lang = strdup("eng");
+    char* header = NULL;
 
     int code = 0, code_len = 0;
     while (pos + len > get_current_byte(file)) {
@@ -734,13 +746,13 @@ void free_sub_track(struct matroska_sub_track* track) {
         free(sentence);
     }
     free(track->sentences);
+    free(track);
 }
 
 void save_all_sub_tracks() {
     for (int i = 0; i < mkv_ctx->sub_tracks_count; i++) {
         save_sub_track(mkv_ctx->sub_tracks[i]);
         free_sub_track(mkv_ctx->sub_tracks[i]);
-        free(mkv_ctx->sub_tracks[i]);
     }
     free(mkv_ctx->sub_tracks);
 }

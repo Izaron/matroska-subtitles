@@ -137,7 +137,7 @@ typedef unsigned char matroska_byte;
 
 /* Structures */
 struct matroska_sub_sentence {
-    matroska_byte* text;
+    char* text;
     matroska_int text_size;
     matroska_int time_start;
     matroska_int time_end;
@@ -145,9 +145,9 @@ struct matroska_sub_sentence {
 
 struct matroska_sub_track {
     matroska_int track_number;
-    matroska_byte* lang;
+    char* lang;
     matroska_int lang_index;
-    matroska_byte* header;
+    char* header;
 
     int sentence_count;
     struct matroska_sub_sentence** sentences;
@@ -167,8 +167,9 @@ matroska_byte* read_bytes(FILE* file, matroska_int n);
 matroska_byte read_byte(FILE* file);
 matroska_int read_vint_length(FILE* file);
 matroska_byte* read_vint_block(FILE* file);
+matroska_byte* read_vint_block_with_len(FILE* file, matroska_int* ptr_len);
 matroska_int read_vint_block_int(FILE* file);
-matroska_byte* read_vint_block_string(FILE* file);
+//matroska_byte* read_vint_block_string(FILE* file);
 void read_vint_block_skip(FILE* file);
 void parse_ebml(FILE* file);
 void parse_segment_info(FILE* file);
