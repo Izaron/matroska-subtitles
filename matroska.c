@@ -58,6 +58,7 @@ matroska_int read_vint_block_int(FILE* file) {
         res += s[i];
     }
 
+    free(s);
     return res;
 }
 
@@ -247,18 +248,6 @@ struct matroska_sub_sentence* parse_segment_cluster_block_group_block(FILE* file
     track->sentences[track->sentence_count] = sentence;
     track->sentence_count++;
 
-    /*char buffer[15];
-    sprintf(buffer, "sub_.txt");
-
-    char* start_time = generate_timestamp(timecode + cluster_timecode);*/
-
-    /*int desc = open(buffer, O_CREAT | O_WRONLY | O_APPEND, S_IWUSR | S_IRUSR);
-    write(desc, start_time, strlen(start_time));
-    write(desc, "\n", 1);
-    write(desc, message, size);
-    write(desc, "\n\n", 2);
-    close(desc);*/
-
     return sentence;
 }
 
@@ -341,6 +330,8 @@ void parse_segment_cluster_block_group(FILE* file, matroska_int cluster_timecode
         else
             sentence_list[i]->time_end = sentence_list[i]->time_start + block_duration;
     }
+
+    free(sentence_list);
 }
 
 void parse_segment_cluster(FILE* file) {
@@ -428,7 +419,7 @@ void parse_segment_track_entry(FILE* file) {
 
     matroska_int track_number = 0;
     enum matroska_track_entry_type track_type = MATROSKA_TRACK_TYPE_VIDEO;
-    matroska_byte* lang = (matroska_byte *) "eng";
+    matroska_byte* lang = (matroska_byte *) strdup("eng");
     matroska_byte* header = NULL;
 
     int code = 0, code_len = 0;
@@ -590,6 +581,8 @@ void parse_segment_track_entry(FILE* file) {
         mkv_ctx->sub_tracks = realloc(mkv_ctx->sub_tracks, sizeof(struct matroska_sub_track*) * (mkv_ctx->sub_tracks_count + 1));
         mkv_ctx->sub_tracks[mkv_ctx->sub_tracks_count] = sub_track;
         mkv_ctx->sub_tracks_count++;
+    } else {
+        free(lang);
     }
 }
 
@@ -697,7 +690,9 @@ char* generate_filename_from_track(struct matroska_sub_track* track) {
 }
 
 void save_sub_track(struct matroska_sub_track* track) {
-    int desc = open(generate_filename_from_track(track), O_WRONLY | O_CREAT | O_TRUNC | O_APPEND, S_IWUSR | S_IRUSR);
+    char* filename = generate_filename_from_track(track);
+    int desc = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_APPEND, S_IWUSR | S_IRUSR);
+    free(filename);
 
     if (track->header != NULL)
         write(desc, track->header, strlen(track->header));
@@ -722,12 +717,32 @@ void save_sub_track(struct matroska_sub_track* track) {
         write(desc, "\n", 1);
         write(desc, sentence->text, sentence->text_size);
         write(desc, "\n\n", 2);
+
+        free(timestamp_start);
+        free(timestamp_end);
     }
 }
 
+void free_sub_track(struct matroska_sub_track* track) {
+    if (track->header != NULL)
+        free(track->header);
+    if (track->lang != NULL)
+        free(track->lang);
+    for (int i = 0; i < track->sentence_count; i++) {
+        struct matroska_sub_sentence* sentence = track->sentences[i];
+        free(sentence->text);
+        free(sentence);
+    }
+    free(track->sentences);
+}
+
 void save_all_sub_tracks() {
-    for (int i = 0; i < mkv_ctx->sub_tracks_count; i++)
+    for (int i = 0; i < mkv_ctx->sub_tracks_count; i++) {
         save_sub_track(mkv_ctx->sub_tracks[i]);
+        free_sub_track(mkv_ctx->sub_tracks[i]);
+        free(mkv_ctx->sub_tracks[i]);
+    }
+    free(mkv_ctx->sub_tracks);
 }
 
 void parse(FILE* file) {
@@ -778,9 +793,9 @@ int main(int argc, char** argv) {
         mkv_ctx = malloc(sizeof(mkv_ctx));
         mkv_ctx->sub_tracks_count = 0;
         mkv_ctx->filename = argv[i];
-
         file = fopen(argv[i], "r");
         parse(file);
         printf("\n\n\n\n");
+        free(mkv_ctx);
     }
 }
