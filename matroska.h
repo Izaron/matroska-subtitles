@@ -153,6 +153,12 @@ struct matroska_sub_track {
     struct matroska_sub_sentence** sentences;
 };
 
+struct matroska_ctx {
+    struct matroska_sub_track** sub_tracks;
+    int sub_tracks_count;
+    char* filename;
+};
+
 /* Bytestream and parser functions */
 void skip_bytes(FILE* file, matroska_int n);
 void set_bytes(FILE* file, matroska_int n);
