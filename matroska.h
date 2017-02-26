@@ -1,4 +1,4 @@
-#ifndef EBML_PARSER_H
+#ifndef MATROSKA_PARSER_H
 #define MATROSKA_PARSER_H
 
 #include <stdio.h>
@@ -187,4 +187,4 @@ char* generate_filename_from_track(struct matroska_sub_track* track);
 void save_sub_track(struct matroska_sub_track* track);
 void save_all_sub_tracks();
 
-#endif //EBML_PARSER_H
+#endif //MATROSKA_PARSER_H
