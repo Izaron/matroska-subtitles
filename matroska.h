@@ -155,7 +155,7 @@ char* matroska_track_text_subtitle_id_strings[] = {
 #define MATROSKA_SWITCH_BREAK(a,b) (a)=0;(b)=0;break
 
 /* Typedefs */
-typedef unsigned long matroska_int;
+typedef unsigned long long matroska_int;
 typedef unsigned char matroska_byte;
 
 /* Structures */
