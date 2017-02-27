@@ -766,7 +766,6 @@ void free_sub_track(struct matroska_sub_track* track) {
         free(sentence->text);
         free(sentence);
     }
-    free(track->sentences);
     free(track);
 }
 
@@ -775,7 +774,6 @@ void save_all_sub_tracks() {
         save_sub_track(mkv_ctx->sub_tracks[i]);
         free_sub_track(mkv_ctx->sub_tracks[i]);
     }
-    free(mkv_ctx->sub_tracks);
 }
 
 void parse(FILE* file) {
