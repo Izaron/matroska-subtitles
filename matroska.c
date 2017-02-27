@@ -13,15 +13,15 @@
 struct matroska_ctx* mkv_ctx;
 
 void skip_bytes(FILE* file, matroska_int n) {
-    fseeko64(file, n, SEEK_CUR);
+    fseeko(file, n, SEEK_CUR);
 }
 
 void set_bytes(FILE* file, matroska_int n) {
-    fseeko64(file, n, SEEK_SET);
+    fseeko(file, n, SEEK_SET);
 }
 
 matroska_int get_current_byte(FILE* file) {
-    return (matroska_int) ftello64(file);
+    return (matroska_int) ftello(file);
 }
 
 matroska_byte* read_bytes(FILE* file, matroska_int n) {
