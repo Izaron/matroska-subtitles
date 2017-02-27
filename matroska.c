@@ -1,10 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
+#ifdef WIN32
+#include <sys/stat.h>
+#else
 #include <unistd.h>
+#endif
 #include <fcntl.h>
 #include <limits.h>
-#include <string.h>
 #include "matroska.h"
 
 struct matroska_ctx* mkv_ctx;
@@ -716,7 +719,12 @@ char* generate_filename_from_track(struct matroska_sub_track* track) {
 
 void save_sub_track(struct matroska_sub_track* track) {
     char* filename = generate_filename_from_track(track);
-    int desc = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_APPEND, S_IWUSR | S_IRUSR);
+    int desc;
+#ifdef WIN32
+    desc = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_APPEND, S_IREAD | S_IWRITE);
+#else
+    desc = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_APPEND, S_IWUSR | S_IRUSR);
+#endif
     free(filename);
 
     if (track->header != NULL)
@@ -818,7 +826,7 @@ int main(int argc, char** argv) {
         mkv_ctx = malloc(sizeof(struct matroska_ctx));
         mkv_ctx->sub_tracks_count = 0;
         mkv_ctx->filename = argv[i];
-        file = fopen(argv[i], "r");
+        file = fopen(argv[i], "rb");
         parse(file);
         printf("\n\n\n\n");
         free(mkv_ctx);
