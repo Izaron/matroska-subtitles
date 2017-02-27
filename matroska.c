@@ -456,6 +456,7 @@ void parse_segment_track_entry(FILE* file) {
             /* Track entry ids*/
             case MATROSKA_SEGMENT_TRACK_TRACK_NUMBER:
                 track_number = read_vint_block_int(file);
+                printf("Track number: %lld\n", track_number);
                 MATROSKA_SWITCH_BREAK(code, code_len);
             case MATROSKA_SEGMENT_TRACK_TRACK_UID:
                 printf("UID: %llu\n", read_vint_block_int(file));
