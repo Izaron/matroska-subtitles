@@ -259,7 +259,7 @@ struct matroska_sub_sentence* parse_segment_cluster_block_group_block(FILE* file
     sentence->time_start = timecode + cluster_timecode;
 
     struct matroska_sub_track* track = mkv_ctx->sub_tracks[sub_track_index];
-    track->sentences = realloc(track->sentences, sizeof(struct matroska_sub_track*) * (track->sentence_count + 1));
+    //track->sentences = realloc(track->sentences, sizeof(struct matroska_sub_track*) * (track->sentence_count + 1));
     track->sentences[track->sentence_count] = sentence;
     track->sentence_count++;
 
@@ -606,7 +606,7 @@ void parse_segment_track_entry(FILE* file) {
                 sub_track->lang_index++;
 
         mkv_ctx->sub_tracks;
-        mkv_ctx->sub_tracks = realloc(mkv_ctx->sub_tracks, sizeof(struct matroska_sub_track*) * (mkv_ctx->sub_tracks_count + 1));
+        //mkv_ctx->sub_tracks = realloc(mkv_ctx->sub_tracks, sizeof(struct matroska_sub_track*) * (mkv_ctx->sub_tracks_count + 1));
         mkv_ctx->sub_tracks[mkv_ctx->sub_tracks_count] = sub_track;
         mkv_ctx->sub_tracks_count++;
     } else {
@@ -828,7 +828,6 @@ int main(int argc, char** argv) {
         mkv_ctx->filename = argv[i];
         file = fopen(argv[i], "rb");
         parse(file);
-        printf("\n\n\n\n");
         free(mkv_ctx);
     }
 }
