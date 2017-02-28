@@ -136,20 +136,20 @@ enum matroska_track_subtitle_codec_id {
 };
 
 char* matroska_track_text_subtitle_id_strings[] = {
-    "S_TEXT/UTF8",
-    "S_TEXT/SSA",
-    "S_TEXT/ASS",
-    "S_TEXT/USF",
-    "S_TEXT/WEBVTT",
-    "S_IMAGE/BMP",
-    "S_VOBSUB",
-    "S_KATE"
+        "S_TEXT/UTF8",
+        "S_TEXT/SSA",
+        "S_TEXT/ASS",
+        "S_TEXT/USF",
+        "S_TEXT/WEBVTT",
+        "S_IMAGE/BMP",
+        "S_VOBSUB",
+        "S_KATE"
 };
 
 char* matroska_track_text_subtitle_id_extensions[] = {
-    "srt", "ssa", "ass",
-    "usf", "vtt", "bmp",
-    NULL, NULL  // Unknown
+        "srt", "ssa", "ass",
+        "usf", "vtt", "bmp",
+        NULL, NULL  // Unknown
 };
 
 /* Messages */
