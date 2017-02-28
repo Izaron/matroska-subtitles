@@ -125,7 +125,7 @@ enum matroska_track_entry_type {
 };
 
 enum matroska_track_subtitle_codec_id {
-    MATROSKA_TRACK_SUBTITLE_CODEC_ID_UTF8,
+    MATROSKA_TRACK_SUBTITLE_CODEC_ID_UTF8 = 0,
     MATROSKA_TRACK_SUBTITLE_CODEC_ID_SSA,
     MATROSKA_TRACK_SUBTITLE_CODEC_ID_ASS,
     MATROSKA_TRACK_SUBTITLE_CODEC_ID_USF,
@@ -144,6 +144,12 @@ char* matroska_track_text_subtitle_id_strings[] = {
     "S_IMAGE/BMP",
     "S_VOBSUB",
     "S_KATE"
+};
+
+char* matroska_track_text_subtitle_id_extensions[] = {
+    "srt", "ssa", "ass",
+    "usf", "vtt", "bmp",
+    NULL, NULL  // Unknown
 };
 
 /* Messages */

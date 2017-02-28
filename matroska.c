@@ -213,7 +213,7 @@ void parse_segment_info(FILE* file) {
     }
 }
 
-char* generate_timestamp(matroska_int milliseconds) {
+char* generate_timestamp_utf8(matroska_int milliseconds) {
     matroska_int millis = milliseconds % 1000;
     milliseconds /= 1000;
     matroska_int seconds = milliseconds % 60;
@@ -224,6 +224,20 @@ char* generate_timestamp(matroska_int milliseconds) {
 
     char* buf = malloc(sizeof(char) * 15);
     sprintf(buf, "%02lld:%02lld:%02lld,%03lld", hours, minutes, seconds, millis);
+    return buf;
+}
+
+char* generate_timestamp_ass_ssa(matroska_int milliseconds) {
+    matroska_int millis = (milliseconds % 1000) / 10;
+    milliseconds /= 1000;
+    matroska_int seconds = milliseconds % 60;
+    milliseconds /= 60;
+    matroska_int minutes = milliseconds % 60;
+    milliseconds /= 60;
+    matroska_int hours = milliseconds;
+
+    char* buf = malloc(sizeof(char) * 15);
+    sprintf(buf, "%lld:%02lld:%02lld.%02lld", hours, minutes, seconds, millis);
     return buf;
 }
 
@@ -710,9 +724,10 @@ void parse_segment(FILE* file) {
 char* generate_filename_from_track(struct matroska_sub_track* track) {
     char* buf = malloc(sizeof(char) * 200);
     if (track->lang_index == 0)
-        sprintf(buf, "%s_%s.srt", mkv_ctx->filename, track->lang);
+        sprintf(buf, "%s_%s.%s", mkv_ctx->filename, track->lang, matroska_track_text_subtitle_id_extensions[track->codec_id]);
     else
-        sprintf(buf, "%s_%s_%lld.srt", mkv_ctx->filename, track->lang, track->lang_index);
+        sprintf(buf, "%s_%s_%lld.%s", mkv_ctx->filename, track->lang, track->lang_index,
+                    matroska_track_text_subtitle_id_extensions[track->codec_id]);
     write(1, buf, strlen(buf));
     write(1, "\n", 1);
     return buf;
@@ -734,26 +749,45 @@ void save_sub_track(struct matroska_sub_track* track) {
     for (int i = 0; i < track->sentence_count; i++) {
         struct matroska_sub_sentence* sentence = track->sentences[i];
 
-        char number[9];
-        sprintf(number, "%d", i + 1);
+        if (track->codec_id == MATROSKA_TRACK_SUBTITLE_CODEC_ID_UTF8) {
+            char number[9];
+            sprintf(number, "%d", i + 1);
 
-        char* timestamp_start = generate_timestamp(sentence->time_start);
-        matroska_int time_end = sentence->time_end;
-        if (i + 1 < track->sentence_count)
-            time_end = MIN(time_end, track->sentences[i + 1]->time_start - 1);
-        char* timestamp_end = generate_timestamp(time_end);
+            char *timestamp_start = generate_timestamp_utf8(sentence->time_start);
+            matroska_int time_end = sentence->time_end;
+            if (i + 1 < track->sentence_count)
+                time_end = MIN(time_end, track->sentences[i + 1]->time_start - 1);
+            char *timestamp_end = generate_timestamp_utf8(time_end);
 
-        write(desc, number, strlen(number));
-        write(desc, "\n", 1);
-        write(desc, timestamp_start, strlen(timestamp_start));
-        write(desc, " --> ", 5);
-        write(desc, timestamp_end, strlen(timestamp_start));
-        write(desc, "\n", 1);
-        write(desc, sentence->text, sentence->text_size);
-        write(desc, "\n\n", 2);
+            write(desc, number, strlen(number));
+            write(desc, "\n", 1);
+            write(desc, timestamp_start, strlen(timestamp_start));
+            write(desc, " --> ", 5);
+            write(desc, timestamp_end, strlen(timestamp_start));
+            write(desc, "\n", 1);
+            write(desc, sentence->text, sentence->text_size);
+            write(desc, "\n\n", 2);
 
-        free(timestamp_start);
-        free(timestamp_end);
+            free(timestamp_start);
+            free(timestamp_end);
+        } else if (track->codec_id == MATROSKA_TRACK_SUBTITLE_CODEC_ID_ASS || track->codec_id == MATROSKA_TRACK_SUBTITLE_CODEC_ID_SSA) {
+            char *timestamp_start = generate_timestamp_ass_ssa(sentence->time_start);
+            matroska_int time_end = sentence->time_end;
+            if (i + 1 < track->sentence_count)
+                time_end = MIN(time_end, track->sentences[i + 1]->time_start - 1);
+            char *timestamp_end = generate_timestamp_ass_ssa(time_end);
+
+            write(desc, "Dialogue: 0,", strlen("Dialogue: 0,"));
+            write(desc, timestamp_start, strlen(timestamp_start));
+            write(desc, ",", 1);
+            write(desc, timestamp_end, strlen(timestamp_start));
+            write(desc, ",", 1);
+            write(desc, sentence->text, sentence->text_size);
+            write(desc, "\n", 1);
+
+            free(timestamp_start);
+            free(timestamp_end);
+        }
     }
 }
 
