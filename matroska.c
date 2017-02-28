@@ -417,6 +417,8 @@ void parse_segment_cluster(FILE* file) {
                 break;
         }
     }
+
+    activity_progress((int) (100 * get_current_byte(file) / mkv_ctx->file_size));
 }
 
 char* get_track_entry_type_description(enum matroska_track_entry_type type) {
@@ -817,6 +819,13 @@ void parse(FILE* file) {
         printf(MATROSKA_ERROR "can't open file. Is it exists?");
         return;
     }
+
+    // Get a file's size
+    // I guess it's bad for streaming, but Matroska have not any streams
+    fseeko(file, 0, SEEK_END);
+    mkv_ctx->file_size = ftello(file);
+    fseeko(file, 0, SEEK_SET);
+
     while (!feof(file)) {
         code <<= 8;
         code += read_byte(file);
@@ -849,7 +858,15 @@ void parse(FILE* file) {
     }
     fclose(file);
 
+    activity_progress(100);
+    printf("\n");
     save_all_sub_tracks();
+}
+
+void activity_progress(int percentage)
+{
+    printf ("\r%3d%%  | Streaming...", percentage);
+    fflush (stdout);
 }
 
 int main(int argc, char** argv) {

@@ -184,6 +184,7 @@ struct matroska_sub_track {
 };
 
 struct matroska_ctx {
+    matroska_int file_size;
     struct matroska_sub_track* sub_tracks[MATROSKA_MAX_TRACKS];
     int sub_tracks_count;
     char* filename;
@@ -217,5 +218,6 @@ int find_sub_track_index(matroska_int track_number);
 char* generate_filename_from_track(struct matroska_sub_track* track);
 void save_sub_track(struct matroska_sub_track* track);
 void save_all_sub_tracks();
+void activity_progress(int percentage);
 
 #endif //MATROSKA_PARSER_H
